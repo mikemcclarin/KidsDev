@@ -27,6 +27,7 @@
         }
         #lives { color: #ff0000; margin: 10px; }
         #level { color: #00ff00; margin: 10px; }
+        #coins { color: #ffd700; margin: 10px; }
     </style>
 </head>
 <body>
@@ -35,9 +36,10 @@
     <div id="hud">
         <div id="lives">Lives: 10</div>
         <div id="level">Level: 1</div>
+        <div id="coins">Coins: 0/5</div>
         <p style="margin-top: 20px; font-size: 16px;">
             Arrow Keys = Move | Spacebar = Jump<br>
-            Reach the green EXIT!
+            Reach the green EXIT! Collect 5 coins for an extra life!
         </p>
     </div>
 
@@ -50,6 +52,80 @@
     let currentLevel = 1;
     let gameOver = false;
     let levelComplete = false;
+    let coins = 0;
+    const COINS_FOR_LIFE = 5;
+
+    // Audio system
+    let audioCtx = null;
+
+    function initAudio() {
+        if (!audioCtx) {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+    }
+
+    function playSound(name) {
+        if (!audioCtx) return;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        switch(name) {
+            case 'jump':
+                osc.frequency.setValueAtTime(300, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(600, audioCtx.currentTime + 0.1);
+                gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+                osc.start(audioCtx.currentTime);
+                osc.stop(audioCtx.currentTime + 0.1);
+                break;
+            case 'coin':
+                osc.frequency.setValueAtTime(800, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(1200, audioCtx.currentTime + 0.1);
+                gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
+                osc.start(audioCtx.currentTime);
+                osc.stop(audioCtx.currentTime + 0.15);
+                break;
+            case 'extraLife':
+                osc.frequency.setValueAtTime(400, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(800, audioCtx.currentTime + 0.15);
+                osc.frequency.exponentialRampToValueAtTime(1000, audioCtx.currentTime + 0.3);
+                gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+                osc.start(audioCtx.currentTime);
+                osc.stop(audioCtx.currentTime + 0.3);
+                break;
+            case 'death':
+                osc.frequency.setValueAtTime(400, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.3);
+                gain.gain.setValueAtTime(0.4, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+                osc.start(audioCtx.currentTime);
+                osc.stop(audioCtx.currentTime + 0.3);
+                break;
+            case 'levelComplete':
+                osc.frequency.setValueAtTime(500, audioCtx.currentTime);
+                osc.frequency.setValueAtTime(600, audioCtx.currentTime + 0.1);
+                osc.frequency.setValueAtTime(800, audioCtx.currentTime + 0.2);
+                gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
+                osc.start(audioCtx.currentTime);
+                osc.stop(audioCtx.currentTime + 0.4);
+                break;
+            case 'victory':
+                osc.frequency.setValueAtTime(400, audioCtx.currentTime);
+                osc.frequency.setValueAtTime(500, audioCtx.currentTime + 0.15);
+                osc.frequency.setValueAtTime(600, audioCtx.currentTime + 0.3);
+                osc.frequency.setValueAtTime(800, audioCtx.currentTime + 0.45);
+                gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.6);
+                osc.start(audioCtx.currentTime);
+                osc.stop(audioCtx.currentTime + 0.6);
+                break;
+        }
+    }
 
     // Player
     const player = {
@@ -71,11 +147,13 @@
     const keys = {};
     window.addEventListener('keydown', (e) => {
         keys[e.key] = true;
+        initAudio();
         if (e.key === ' ') {
             e.preventDefault();
             if (!player.jumping) {
                 player.velY = -12;
                 player.jumping = true;
+                playSound('jump');
             }
         }
     });
@@ -99,7 +177,13 @@
             spikes: [
                 {x: 600, y: 560, width: 80, height: 40}
             ],
-            goal: {x: 750, y: 500, width: 40, height: 80}
+            coins: [
+                {x: 150, y: 470, collected: false},
+                {x: 520, y: 420, collected: false}
+            ],
+            movingObstacles: [],
+            goal: {x: 750, y: 500, width: 40, height: 80},
+            playerStart: {x: 50, y: 550}
         },
         2: {
             platforms: [
@@ -118,17 +202,336 @@
                 {x: 100, y: 560, width: 40, height: 40},
                 {x: 500, y: 560, width: 40, height: 40}
             ],
-            goal: {x: 730, y: 220, width: 40, height: 80}
+            coins: [
+                {x: 80, y: 450, collected: false},
+                {x: 700, y: 270, collected: false}
+            ],
+            movingObstacles: [],
+            goal: {x: 730, y: 220, width: 40, height: 80},
+            playerStart: {x: 50, y: 550}
+        },
+        3: {
+            platforms: [
+                {x: 0, y: 580, width: 150, height: 20},
+                {x: 200, y: 530, width: 100, height: 20},
+                {x: 350, y: 480, width: 100, height: 20},
+                {x: 500, y: 430, width: 100, height: 20},
+                {x: 650, y: 380, width: 150, height: 20}
+            ],
+            pits: [
+                {x: 150, y: 540, width: 50, height: 60},
+                {x: 450, y: 440, width: 50, height: 60}
+            ],
+            spikes: [
+                {x: 300, y: 560, width: 40, height: 40},
+                {x: 550, y: 560, width: 40, height: 40}
+            ],
+            coins: [
+                {x: 240, y: 500, collected: false},
+                {x: 540, y: 400, collected: false}
+            ],
+            movingObstacles: [],
+            goal: {x: 740, y: 300, width: 40, height: 80},
+            playerStart: {x: 50, y: 550}
+        },
+        4: {
+            platforms: [
+                {x: 0, y: 580, width: 200, height: 20},
+                {x: 250, y: 520, width: 150, height: 20},
+                {x: 450, y: 460, width: 150, height: 20},
+                {x: 650, y: 400, width: 150, height: 20}
+            ],
+            pits: [
+                {x: 200, y: 540, width: 50, height: 60}
+            ],
+            spikes: [
+                {x: 350, y: 560, width: 40, height: 40}
+            ],
+            coins: [
+                {x: 300, y: 490, collected: false},
+                {x: 700, y: 370, collected: false}
+            ],
+            movingObstacles: [
+                {x: 480, y: 430, width: 30, height: 30, startX: 450, endX: 570, speed: 2, direction: 1, type: 'horizontal'}
+            ],
+            goal: {x: 750, y: 320, width: 40, height: 80},
+            playerStart: {x: 50, y: 550}
+        },
+        5: {
+            platforms: [
+                {x: 0, y: 580, width: 150, height: 20},
+                {x: 50, y: 480, width: 100, height: 20},
+                {x: 180, y: 400, width: 100, height: 20},
+                {x: 320, y: 320, width: 100, height: 20},
+                {x: 460, y: 240, width: 100, height: 20},
+                {x: 600, y: 160, width: 200, height: 20}
+            ],
+            pits: [],
+            spikes: [
+                {x: 200, y: 560, width: 40, height: 40},
+                {x: 400, y: 560, width: 40, height: 40}
+            ],
+            coins: [
+                {x: 220, y: 370, collected: false},
+                {x: 360, y: 290, collected: false},
+                {x: 500, y: 210, collected: false}
+            ],
+            movingObstacles: [
+                {x: 620, y: 100, width: 30, height: 30, startY: 80, endY: 130, speed: 1.5, direction: 1, type: 'vertical'}
+            ],
+            goal: {x: 740, y: 80, width: 40, height: 80},
+            playerStart: {x: 50, y: 550}
+        },
+        6: {
+            platforms: [
+                {x: 0, y: 580, width: 120, height: 20},
+                {x: 170, y: 520, width: 120, height: 20},
+                {x: 50, y: 440, width: 120, height: 20},
+                {x: 220, y: 360, width: 120, height: 20},
+                {x: 400, y: 300, width: 120, height: 20},
+                {x: 570, y: 240, width: 120, height: 20},
+                {x: 650, y: 400, width: 100, height: 20}
+            ],
+            pits: [
+                {x: 120, y: 540, width: 50, height: 60}
+            ],
+            spikes: [
+                {x: 300, y: 560, width: 40, height: 40},
+                {x: 500, y: 560, width: 40, height: 40}
+            ],
+            coins: [
+                {x: 90, y: 410, collected: false},
+                {x: 260, y: 330, collected: false},
+                {x: 610, y: 210, collected: false}
+            ],
+            movingObstacles: [
+                {x: 430, y: 270, width: 30, height: 30, startX: 400, endX: 490, speed: 2, direction: 1, type: 'horizontal'}
+            ],
+            goal: {x: 700, y: 320, width: 40, height: 80},
+            playerStart: {x: 50, y: 550}
+        },
+        7: {
+            platforms: [
+                {x: 0, y: 580, width: 100, height: 20},
+                {x: 150, y: 520, width: 100, height: 20},
+                {x: 300, y: 460, width: 100, height: 20},
+                {x: 450, y: 400, width: 100, height: 20},
+                {x: 300, y: 320, width: 100, height: 20},
+                {x: 500, y: 260, width: 100, height: 20},
+                {x: 650, y: 200, width: 150, height: 20}
+            ],
+            pits: [
+                {x: 100, y: 540, width: 50, height: 60},
+                {x: 250, y: 480, width: 50, height: 60}
+            ],
+            spikes: [
+                {x: 400, y: 560, width: 40, height: 40},
+                {x: 600, y: 560, width: 40, height: 40}
+            ],
+            coins: [
+                {x: 190, y: 490, collected: false},
+                {x: 340, y: 430, collected: false},
+                {x: 540, y: 230, collected: false}
+            ],
+            movingObstacles: [
+                {x: 320, y: 290, width: 25, height: 25, startX: 300, endX: 375, speed: 2, direction: 1, type: 'horizontal'},
+                {x: 680, y: 130, width: 25, height: 25, startY: 120, endY: 170, speed: 1.5, direction: 1, type: 'vertical'}
+            ],
+            goal: {x: 740, y: 120, width: 40, height: 80},
+            playerStart: {x: 50, y: 550}
+        },
+        8: {
+            platforms: [
+                {x: 0, y: 580, width: 80, height: 20},
+                {x: 120, y: 530, width: 80, height: 20},
+                {x: 240, y: 480, width: 80, height: 20},
+                {x: 360, y: 430, width: 80, height: 20},
+                {x: 480, y: 380, width: 80, height: 20},
+                {x: 600, y: 330, width: 80, height: 20},
+                {x: 700, y: 280, width: 100, height: 20}
+            ],
+            pits: [
+                {x: 80, y: 540, width: 40, height: 60},
+                {x: 320, y: 440, width: 40, height: 60}
+            ],
+            spikes: [
+                {x: 200, y: 560, width: 30, height: 30},
+                {x: 440, y: 560, width: 30, height: 30},
+                {x: 560, y: 560, width: 30, height: 30}
+            ],
+            coins: [
+                {x: 150, y: 500, collected: false},
+                {x: 270, y: 450, collected: false},
+                {x: 390, y: 400, collected: false},
+                {x: 630, y: 300, collected: false}
+            ],
+            movingObstacles: [
+                {x: 500, y: 350, width: 25, height: 25, startX: 480, endX: 535, speed: 2.5, direction: 1, type: 'horizontal'},
+                {x: 720, y: 220, width: 25, height: 25, startY: 200, endY: 250, speed: 2, direction: 1, type: 'vertical'}
+            ],
+            goal: {x: 740, y: 200, width: 40, height: 80},
+            playerStart: {x: 30, y: 550}
+        },
+        9: {
+            platforms: [
+                {x: 0, y: 580, width: 100, height: 20},
+                {x: 80, y: 500, width: 80, height: 20},
+                {x: 200, y: 430, width: 80, height: 20},
+                {x: 320, y: 360, width: 80, height: 20},
+                {x: 200, y: 280, width: 80, height: 20},
+                {x: 350, y: 210, width: 80, height: 20},
+                {x: 500, y: 150, width: 80, height: 20},
+                {x: 650, y: 100, width: 150, height: 20}
+            ],
+            pits: [
+                {x: 160, y: 540, width: 40, height: 60}
+            ],
+            spikes: [
+                {x: 250, y: 560, width: 40, height: 40},
+                {x: 400, y: 560, width: 40, height: 40},
+                {x: 550, y: 560, width: 40, height: 40}
+            ],
+            coins: [
+                {x: 110, y: 470, collected: false},
+                {x: 230, y: 400, collected: false},
+                {x: 230, y: 250, collected: false},
+                {x: 530, y: 120, collected: false}
+            ],
+            movingObstacles: [
+                {x: 340, y: 330, width: 25, height: 25, startX: 320, endX: 375, speed: 2, direction: 1, type: 'horizontal'},
+                {x: 220, y: 250, width: 25, height: 25, startY: 200, endY: 250, speed: 1.5, direction: 1, type: 'vertical'},
+                {x: 520, y: 100, width: 25, height: 25, startX: 500, endX: 555, speed: 2.5, direction: 1, type: 'horizontal'}
+            ],
+            goal: {x: 740, y: 20, width: 40, height: 80},
+            playerStart: {x: 50, y: 550}
+        },
+        10: {
+            platforms: [
+                {x: 0, y: 580, width: 80, height: 20},
+                {x: 130, y: 530, width: 70, height: 20},
+                {x: 250, y: 480, width: 70, height: 20},
+                {x: 130, y: 400, width: 70, height: 20},
+                {x: 250, y: 330, width: 70, height: 20},
+                {x: 380, y: 280, width: 70, height: 20},
+                {x: 510, y: 220, width: 70, height: 20},
+                {x: 380, y: 150, width: 70, height: 20},
+                {x: 550, y: 100, width: 70, height: 20},
+                {x: 680, y: 60, width: 120, height: 20}
+            ],
+            pits: [
+                {x: 80, y: 540, width: 50, height: 60},
+                {x: 200, y: 490, width: 50, height: 60}
+            ],
+            spikes: [
+                {x: 320, y: 560, width: 40, height: 40},
+                {x: 450, y: 560, width: 40, height: 40},
+                {x: 600, y: 560, width: 40, height: 40}
+            ],
+            coins: [
+                {x: 155, y: 500, collected: false},
+                {x: 155, y: 370, collected: false},
+                {x: 280, y: 300, collected: false},
+                {x: 540, y: 190, collected: false},
+                {x: 720, y: 30, collected: false}
+            ],
+            movingObstacles: [
+                {x: 270, y: 450, width: 25, height: 25, startX: 250, endX: 295, speed: 2, direction: 1, type: 'horizontal'},
+                {x: 270, y: 300, width: 25, height: 25, startX: 250, endX: 295, speed: 2.5, direction: -1, type: 'horizontal'},
+                {x: 400, y: 250, width: 25, height: 25, startX: 380, endX: 425, speed: 2, direction: 1, type: 'horizontal'},
+                {x: 580, y: 50, width: 25, height: 25, startY: 30, endY: 70, speed: 2, direction: 1, type: 'vertical'}
+            ],
+            goal: {x: 740, y: -20, width: 40, height: 80},
+            playerStart: {x: 30, y: 550}
         }
     };
 
+    function resetLevelCoins() {
+        const level = levels[currentLevel];
+        if (level.coins) {
+            for (let coin of level.coins) {
+                coin.collected = false;
+            }
+        }
+    }
+
     function resetLevel() {
-        player.x = player.startX;
-        player.y = player.startY;
+        const level = levels[currentLevel];
+        player.x = level.playerStart.x;
+        player.y = level.playerStart.y;
+        player.startX = level.playerStart.x;
+        player.startY = level.playerStart.y;
         player.velX = 0;
         player.velY = 0;
         player.jumping = false;
         levelComplete = false;
+        resetLevelCoins();
+    }
+
+    function checkCoinCollision() {
+        const level = levels[currentLevel];
+        if (!level.coins) return;
+
+        for (let coin of level.coins) {
+            if (coin.collected) continue;
+
+            const coinRadius = 10;
+            const coinCenterX = coin.x + coinRadius;
+            const coinCenterY = coin.y + coinRadius;
+            const playerCenterX = player.x + player.width / 2;
+            const playerCenterY = player.y + player.height / 2;
+
+            const dx = coinCenterX - playerCenterX;
+            const dy = coinCenterY - playerCenterY;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+
+            if (distance < coinRadius + player.width / 2) {
+                coin.collected = true;
+                coins++;
+                playSound('coin');
+
+                if (coins >= COINS_FOR_LIFE) {
+                    coins = 0;
+                    lives++;
+                    playSound('extraLife');
+                }
+            }
+        }
+    }
+
+    function updateMovingObstacles() {
+        const level = levels[currentLevel];
+        if (!level.movingObstacles) return;
+
+        for (let obs of level.movingObstacles) {
+            if (obs.type === 'horizontal') {
+                obs.x += obs.speed * obs.direction;
+                if (obs.x <= obs.startX || obs.x + obs.width >= obs.endX + obs.width) {
+                    obs.direction *= -1;
+                }
+            } else if (obs.type === 'vertical') {
+                obs.y += obs.speed * obs.direction;
+                if (obs.y <= obs.startY || obs.y + obs.height >= obs.endY + obs.height) {
+                    obs.direction *= -1;
+                }
+            }
+        }
+    }
+
+    function checkMovingObstacleCollision() {
+        const level = levels[currentLevel];
+        if (!level.movingObstacles) return false;
+
+        for (let obs of level.movingObstacles) {
+            if (
+                player.x + player.width > obs.x &&
+                player.x < obs.x + obs.width &&
+                player.y + player.height > obs.y &&
+                player.y < obs.y + obs.height
+            ) {
+                return true;
+            }
+        }
+        return false;
     }
 
     function updatePlayer() {
@@ -180,6 +583,7 @@
                 player.y < pit.y + pit.height
             ) {
                 lives--;
+                playSound('death');
                 if (lives <= 0) {
                     gameOver = true;
                 } else {
@@ -198,6 +602,7 @@
                 player.y < spike.y + spike.height
             ) {
                 lives--;
+                playSound('death');
                 if (lives <= 0) {
                     gameOver = true;
                 } else {
@@ -207,6 +612,21 @@
             }
         }
 
+        // Moving obstacle collision
+        if (checkMovingObstacleCollision()) {
+            lives--;
+            playSound('death');
+            if (lives <= 0) {
+                gameOver = true;
+            } else {
+                resetLevel();
+            }
+            return;
+        }
+
+        // Coin collision
+        checkCoinCollision();
+
         // Goal collision
         if (
             player.x + player.width > level.goal.x &&
@@ -215,6 +635,11 @@
             player.y < level.goal.y + level.goal.height
         ) {
             levelComplete = true;
+            if (currentLevel < 10) {
+                playSound('levelComplete');
+            } else {
+                playSound('victory');
+            }
         }
 
         // Animation
@@ -261,6 +686,62 @@
         ctx.restore();
     }
 
+    function drawCoins() {
+        const level = levels[currentLevel];
+        if (!level.coins) return;
+
+        const time = Date.now() / 200;
+
+        for (let coin of level.coins) {
+            if (coin.collected) continue;
+
+            ctx.fillStyle = '#ffd700';
+            ctx.strokeStyle = '#ffaa00';
+            ctx.lineWidth = 2;
+
+            // Animated coin (slight bounce)
+            const bounce = Math.sin(time + coin.x) * 2;
+
+            ctx.beginPath();
+            ctx.arc(coin.x + 10, coin.y + 10 + bounce, 10, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+            // Inner shine
+            ctx.fillStyle = '#ffee88';
+            ctx.beginPath();
+            ctx.arc(coin.x + 7, coin.y + 7 + bounce, 3, 0, Math.PI * 2);
+            ctx.fill();
+        }
+    }
+
+    function drawMovingObstacles() {
+        const level = levels[currentLevel];
+        if (!level.movingObstacles) return;
+
+        for (let obs of level.movingObstacles) {
+            // Body (pink enemy)
+            ctx.fillStyle = '#ff69b4';
+            ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
+
+            // Eyes
+            ctx.fillStyle = '#fff';
+            const eyeSize = obs.width / 6;
+            const eyeY = obs.y + obs.height / 3;
+            ctx.beginPath();
+            ctx.arc(obs.x + obs.width / 3, eyeY, eyeSize, 0, Math.PI * 2);
+            ctx.arc(obs.x + obs.width * 2 / 3, eyeY, eyeSize, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Pupils
+            ctx.fillStyle = '#000';
+            ctx.beginPath();
+            ctx.arc(obs.x + obs.width / 3, eyeY, eyeSize / 2, 0, Math.PI * 2);
+            ctx.arc(obs.x + obs.width * 2 / 3, eyeY, eyeSize / 2, 0, Math.PI * 2);
+            ctx.fill();
+        }
+    }
+
     function draw() {
         ctx.fillStyle = '#1a1a1a';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -297,6 +778,12 @@
             ctx.fill();
         }
 
+        // Draw moving obstacles
+        drawMovingObstacles();
+
+        // Draw coins
+        drawCoins();
+
         // Draw goal
         ctx.fillStyle = '#00ff00';
         ctx.fillRect(level.goal.x, level.goal.y, level.goal.width, level.goal.height);
@@ -309,13 +796,15 @@
         // Update HUD
         document.getElementById('lives').textContent = 'Lives: ' + lives;
         document.getElementById('level').textContent = 'Level: ' + currentLevel;
+        document.getElementById('coins').textContent = 'Coins: ' + coins + '/' + COINS_FOR_LIFE;
     }
 
     function gameLoop() {
         if (!gameOver && !levelComplete) {
             updatePlayer();
+            updateMovingObstacles();
         } else if (levelComplete) {
-            if (currentLevel < 2) {
+            if (currentLevel < 10) {
                 currentLevel++;
                 resetLevel();
             } else {
@@ -331,17 +820,21 @@
             ctx.textAlign = 'center';
             if (lives > 0) {
                 ctx.fillText('YOU WIN!', canvas.width / 2, canvas.height / 2);
+                ctx.font = '24px Arial';
+                ctx.fillText('Congratulations! You beat all 10 levels!', canvas.width / 2, canvas.height / 2 + 40);
             } else {
                 ctx.fillText('GAME OVER', canvas.width / 2, canvas.height / 2);
             }
             ctx.font = '20px Arial';
-            ctx.fillText('Refresh to restart', canvas.width / 2, canvas.height / 2 + 50);
+            ctx.fillText('Refresh to restart', canvas.width / 2, canvas.height / 2 + 80);
         }
 
         draw();
         requestAnimationFrame(gameLoop);
     }
 
+    // Initialize first level
+    resetLevel();
     gameLoop();
     </script>
 </body>

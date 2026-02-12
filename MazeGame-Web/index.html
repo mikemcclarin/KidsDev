@@ -328,56 +328,183 @@
             const w = player.width;
             const h = player.height;
             
-            // Body (red)
-            ctx.fillStyle = '#ff0000';
-            ctx.fillRect(x + 2, y + 8, w - 4, h - 10);
+            // Determine pose
+            let isJumping = player.jumping || player.velY < -2;
+            let isFalling = player.velY > 2;
+            let isRunning = player.velX !== 0 && !isJumping && !isFalling;
             
-            // Head (red)
-            ctx.fillStyle = '#ff0000';
-            ctx.beginPath();
-            ctx.arc(x + w / 2, y + 3, 3, 0, Math.PI * 2);
-            ctx.fill();
-            
-            // Eyes
-            ctx.fillStyle = '#ffffff';
-            ctx.beginPath();
-            ctx.arc(x + w / 2 - 1.5, y + 2, 1, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.beginPath();
-            ctx.arc(x + w / 2 + 1.5, y + 2, 1, 0, Math.PI * 2);
-            ctx.fill();
-            
-            // Animate legs
-            const legPhase = Math.floor(player.animFrame) % 4;
-            let leg1Y = y + 16;
-            let leg2Y = y + 16;
-            
-            if (player.velX !== 0) {
-                // Running animation
-                if (legPhase === 0 || legPhase === 2) {
-                    leg1Y += 2;
-                } else {
-                    leg2Y += 2;
-                }
+            // Add bounce to running
+            let bobAmount = 0;
+            if (isRunning) {
+                bobAmount = Math.sin(player.animFrame * Math.PI * 2) * 1.5;
             }
             
-            // Draw legs
-            ctx.strokeStyle = '#ff0000';
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.moveTo(x + 6, y + 14);
-            ctx.lineTo(x + 6, leg1Y);
-            ctx.stroke();
+            const bodyY = y + bobAmount;
             
-            ctx.beginPath();
-            ctx.moveTo(x + 14, y + 14);
-            ctx.lineTo(x + 14, leg2Y);
-            ctx.stroke();
+            // Draw shadow on ground (subtle)
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+            ctx.fillRect(x + 3, y + h + 1, w - 6, 2);
             
-            // Outline
+            // JUMPING POSE
+            if (isJumping) {
+                // Head
+                ctx.fillStyle = '#ff0000';
+                ctx.beginPath();
+                ctx.arc(x + w / 2, bodyY + 2, 3.5, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Eyes
+                ctx.fillStyle = '#ffffff';
+                ctx.beginPath();
+                ctx.arc(x + w / 2 - 1.5, bodyY + 1, 1.2, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.arc(x + w / 2 + 1.5, bodyY + 1, 1.2, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Body (stretched)
+                ctx.fillStyle = '#ff0000';
+                ctx.fillRect(x + 2, bodyY + 7, w - 4, h - 12);
+                
+                // Arms up (celebrating)
+                ctx.strokeStyle = '#ff0000';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(x + 3, bodyY + 9);
+                ctx.lineTo(x + 3, bodyY + 4);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(x + w - 3, bodyY + 9);
+                ctx.lineTo(x + w - 3, bodyY + 4);
+                ctx.stroke();
+                
+                // Legs straight
+                ctx.beginPath();
+                ctx.moveTo(x + 6, bodyY + 15);
+                ctx.lineTo(x + 6, bodyY + h - 2);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(x + 14, bodyY + 15);
+                ctx.lineTo(x + 14, bodyY + h - 2);
+                ctx.stroke();
+            }
+            // FALLING POSE
+            else if (isFalling) {
+                // Head
+                ctx.fillStyle = '#ff0000';
+                ctx.beginPath();
+                ctx.arc(x + w / 2, bodyY + 2, 3.5, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Eyes (scared)
+                ctx.fillStyle = '#ffffff';
+                ctx.beginPath();
+                ctx.arc(x + w / 2 - 1.5, bodyY, 1.2, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.arc(x + w / 2 + 1.5, bodyY, 1.2, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Body
+                ctx.fillStyle = '#ff0000';
+                ctx.fillRect(x + 2, bodyY + 7, w - 4, h - 12);
+                
+                // Arms flailing
+                ctx.strokeStyle = '#ff0000';
+                ctx.lineWidth = 2;
+                const armAngle = Math.sin(Date.now() / 100) * 0.3;
+                ctx.beginPath();
+                ctx.moveTo(x + 3, bodyY + 9);
+                ctx.lineTo(x + 3 - 3 * Math.cos(armAngle), bodyY + 9 - 3 * Math.sin(armAngle));
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(x + w - 3, bodyY + 9);
+                ctx.lineTo(x + w - 3 + 3 * Math.cos(armAngle), bodyY + 9 - 3 * Math.sin(armAngle));
+                ctx.stroke();
+                
+                // Legs flailing
+                ctx.beginPath();
+                ctx.moveTo(x + 6, bodyY + 15);
+                ctx.lineTo(x + 4, bodyY + h);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(x + 14, bodyY + 15);
+                ctx.lineTo(x + 16, bodyY + h);
+                ctx.stroke();
+            }
+            // RUNNING/IDLE POSE
+            else {
+                // Head
+                ctx.fillStyle = '#ff0000';
+                ctx.beginPath();
+                ctx.arc(x + w / 2, bodyY + 3, 3, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Eyes (happy)
+                ctx.fillStyle = '#ffffff';
+                ctx.beginPath();
+                ctx.arc(x + w / 2 - 1.5, bodyY + 2, 1, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.arc(x + w / 2 + 1.5, bodyY + 2, 1, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Mouth (smile when running)
+                if (isRunning) {
+                    ctx.strokeStyle = '#ffffff';
+                    ctx.lineWidth = 1;
+                    ctx.beginPath();
+                    ctx.arc(x + w / 2, bodyY + 4, 1.5, 0, Math.PI);
+                    ctx.stroke();
+                }
+                
+                // Body
+                ctx.fillStyle = '#ff0000';
+                ctx.fillRect(x + 2, bodyY + 8, w - 4, h - 12);
+                
+                // Arms swinging (opposite to legs)
+                ctx.strokeStyle = '#ff0000';
+                ctx.lineWidth = 2;
+                const legPhase = Math.floor(player.animFrame) % 4;
+                const armSwing = Math.sin(player.animFrame * Math.PI) * 1.5;
+                
+                ctx.beginPath();
+                ctx.moveTo(x + 3, bodyY + 10);
+                ctx.lineTo(x + 3 + armSwing, bodyY + 13);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(x + w - 3, bodyY + 10);
+                ctx.lineTo(x + w - 3 - armSwing, bodyY + 13);
+                ctx.stroke();
+                
+                // Animate legs
+                let leg1Y = bodyY + 16;
+                let leg2Y = bodyY + 16;
+                
+                if (isRunning) {
+                    if (legPhase === 0 || legPhase === 1) {
+                        leg1Y += 2;
+                    } else {
+                        leg2Y += 2;
+                    }
+                }
+                
+                // Draw legs
+                ctx.beginPath();
+                ctx.moveTo(x + 6, bodyY + 14);
+                ctx.lineTo(x + 6, leg1Y);
+                ctx.stroke();
+                
+                ctx.beginPath();
+                ctx.moveTo(x + 14, bodyY + 14);
+                ctx.lineTo(x + 14, leg2Y);
+                ctx.stroke();
+            }
+            
+            // Outline/glow
             ctx.strokeStyle = '#ffff00';
-            ctx.lineWidth = 1;
-            ctx.strokeRect(x, y, w, h);
+            ctx.lineWidth = 1.5;
+            ctx.strokeRect(x - 1, y - 1, w + 2, h + 2);
         }
 
         function gameLoop() {

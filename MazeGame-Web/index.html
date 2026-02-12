@@ -60,6 +60,7 @@
             velY: 0,
             speed: 5,
             jumping: false,
+            doubleJumpAvailable: false,
             startX: 50,
             startY: 550,
             animFrame: 0,
@@ -72,9 +73,16 @@
             keys[e.key] = true;
             if (e.key === ' ') {
                 e.preventDefault();
+                // First jump
                 if (!player.jumping) {
                     player.velY = -12;
                     player.jumping = true;
+                    player.doubleJumpAvailable = true;  // Enable double jump
+                }
+                // Double jump in air
+                else if (player.doubleJumpAvailable) {
+                    player.velY = -12;
+                    player.doubleJumpAvailable = false;  // Can only double jump once
                 }
             }
         });
@@ -161,6 +169,7 @@
             // Platform collision
             for (let p of currentLevel.platforms) {
                 if (player.x < p.x + p.w &&
+                    player.doubleJumpAvailable = false;  // Reset double jump when landing
                     player.x + player.width > p.x &&
                     player.y + player.height >= p.y &&
                     player.y + player.height <= p.y + p.h + 10 &&

@@ -1,4 +1,6 @@
-[gd_scene load_steps=2 format=3 uid="uid://dmulwc2hkt3oj"]
+[gd_scene format=3 uid="uid://dmulwc2hkt3oj"]
+
+[ext_resource type="PackedScene" uid="uid://dt44lqryfyn53" path="res://scenes/NewScene.tscn" id="1_o5qli"]
 
 [sub_resource type="GDScript" id="GDScript_scvea"]
 script/source = "extends Node2D
@@ -12,5 +14,7 @@ func _input(event):
 			get_tree().quit()
 "
 
-[node name="Main" type="Node2D"]
+[node name="Main" type="Node2D" unique_id=1667719002]
 script = SubResource("GDScript_scvea")
+
+[node name="NewScene" parent="." unique_id=1002563469 instance=ExtResource("1_o5qli")]

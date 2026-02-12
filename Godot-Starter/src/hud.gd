@@ -1,7 +1,4 @@
-[gd_scene format=3 uid="uid://d2gqj0qt4nv6u"]
-
-[sub_resource type="GDScript" id="GDScript_9bq8r"]
-script/source = "extends CanvasLayer
+extends CanvasLayer
 
 @onready var lives_label = Label.new()
 @onready var level_label = Label.new()
@@ -14,27 +11,27 @@ func _ready():
 	game_manager = get_tree().get_first_node_in_group("game_manager")
 	
 	# Setup lives label
-	lives_label.text = \"Lives: 10\"
-	lives_label.add_theme_font_size_override(\"font_size\", 32)
+	lives_label.text = "Lives: 10"
+	lives_label.add_theme_font_size_override("font_size", 32)
 	lives_label.position = Vector2(10, 10)
 	add_child(lives_label)
 	
 	# Setup level label
-	level_label.text = \"Level: 1\"
-	level_label.add_theme_font_size_override(\"font_size\", 32)
+	level_label.text = "Level: 1"
+	level_label.add_theme_font_size_override("font_size", 32)
 	level_label.position = Vector2(10, 50)
 	add_child(level_label)
 	
 	# Setup game over label (hidden by default)
-	game_over_label.text = \"GAME OVER!\"
-	game_over_label.add_theme_font_size_override(\"font_size\", 64)
+	game_over_label.text = "GAME OVER!"
+	game_over_label.add_theme_font_size_override("font_size", 64)
 	game_over_label.position = Vector2(200, 300)
 	game_over_label.visible = false
 	add_child(game_over_label)
 	
 	# Setup level complete label (hidden by default)
-	level_complete_label.text = \"LEVEL COMPLETE!\"
-	level_complete_label.add_theme_font_size_override(\"font_size\", 64)
+	level_complete_label.text = "LEVEL COMPLETE!"
+	level_complete_label.add_theme_font_size_override("font_size", 64)
 	level_complete_label.position = Vector2(150, 300)
 	level_complete_label.visible = false
 	add_child(level_complete_label)
@@ -47,17 +44,13 @@ func _ready():
 		game_manager.level_completed.connect(_on_level_complete)
 
 func _on_lives_changed(new_lives):
-	lives_label.text = \"Lives: %d\" % new_lives
+	lives_label.text = "Lives: %d" % new_lives
 
 func _on_level_changed(new_level):
-	level_label.text = \"Level: %d\" % new_level
+	level_label.text = "Level: %d" % new_level
 
 func _on_game_over():
 	game_over_label.visible = true
 
 func _on_level_complete():
 	level_complete_label.visible = true
-"
-
-[node name="HUD" type="CanvasLayer"]
-script = SubResource("GDScript_9bq8r")

@@ -1,10 +1,13 @@
 extends Node
-# Global game manager for lives, level, UI updates
+# Game manager for lives, level, UI updates
 
 signal lives_changed(new_lives)
 signal level_changed(new_level)
 signal level_completed
 signal game_over
+
+func _ready():
+	add_to_group("game_manager")
 
 func update_lives(new_lives):
 	lives_changed.emit(new_lives)

@@ -1,0 +1,84 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background-color: #000;
+    font-family: Arial, sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    color: #fff;
+}
+
+#gameContainer {
+    text-align: center;
+}
+
+#gameCanvas {
+    background-color: #1a1a1a;
+    border: 3px solid #fff;
+    display: block;
+    margin-bottom: 20px;
+}
+
+#hud {
+    font-size: 24px;
+    padding: 10px;
+}
+
+#lives {
+    color: #ff0000;
+    margin-bottom: 10px;
+}
+
+#level {
+    color: #00ff00;
+    margin-bottom: 10px;
+}
+
+.screen {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: rgba(0, 0, 0, 0.95);
+    padding: 40px;
+    border: 3px solid #fff;
+    text-align: center;
+    z-index: 1000;
+}
+
+.screen h1 {
+    font-size: 48px;
+    margin-bottom: 20px;
+    color: #ff0;
+}
+
+.screen button {
+    padding: 15px 30px;
+    font-size: 24px;
+    background-color: #00ff00;
+    color: #000;
+    border: none;
+    cursor: pointer;
+    margin-top: 20px;
+}
+
+.screen button:hover {
+    background-color: #00cc00;
+}
+
+.hidden {
+    display: none;
+}
+
+/* Retro Atari style */
+@media (prefers-color-scheme: dark) {
+    body {
+        background-color: #000;
+    }
+}

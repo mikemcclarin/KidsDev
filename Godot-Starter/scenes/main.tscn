@@ -1,20 +1,12 @@
-[gd_scene format=3 uid="uid://dmulwc2hkt3oj"]
+[gd_scene format=3 uid="uid://c62gwvhpor84v"]
 
 [ext_resource type="PackedScene" uid="uid://dt44lqryfyn53" path="res://scenes/NewScene.tscn" id="1_o5qli"]
-
-[sub_resource type="GDScript" id="GDScript_scvea"]
-script/source = "extends Node2D
-
-func _ready():
-	print(\"Welcome to KidsDev! Start building games here.\")
-
-func _input(event):
-	if event is InputEventKey and event.pressed:
-		if event.keycode == KEY_ESCAPE:
-			get_tree().quit()
-"
+[ext_resource type="Script" uid="uid://baxetnoybux1k" path="res://src/game_manager.gd" id="1_sugp2"]
+[ext_resource type="PackedScene" uid="uid://bxafwxi6isegu" path="res://scenes/player1.tscn" id="3_jyhfs"]
 
 [node name="Main" type="Node2D" unique_id=1667719002]
-script = SubResource("GDScript_scvea")
+script = ExtResource("1_sugp2")
 
 [node name="NewScene" parent="." unique_id=1002563469 instance=ExtResource("1_o5qli")]
+
+[node name="player" parent="." unique_id=1079982636 instance=ExtResource("3_jyhfs")]

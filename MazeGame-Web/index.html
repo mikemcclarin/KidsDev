@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Maze Pitfalls - Atari Style</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="gameContainer">
+        <canvas id="gameCanvas" width="800" height="600"></canvas>
+        <div id="hud">
+            <div id="lives">Lives: 10</div>
+            <div id="level">Level: 1</div>
+            <div id="gameOverScreen" class="screen hidden">
+                <h1>GAME OVER!</h1>
+                <button onclick="location.reload()">Restart</button>
+            </div>
+            <div id="levelCompleteScreen" class="screen hidden">
+                <h1>LEVEL COMPLETE!</h1>
+                <button onclick="nextLevel()">Next Level</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/game.js"></script>
+    <script src="js/player.js"></script>
+    <script src="js/level.js"></script>
+</body>
+</html>

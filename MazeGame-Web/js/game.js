@@ -21,9 +21,10 @@ function init() {
         gameOver: false,
         levelComplete: false
     };
-    player = new Player(50, 50);
+    player = new Player(50, 550);
     level = new Level(gameState.level);
     updateHUD();
+    console.log('Game initialized - Level ' + gameState.level);
 }
 
 function gameLoop() {
@@ -43,13 +44,16 @@ function gameLoop() {
 }
 
 function updateHUD() {
-    document.getElementById('lives').textContent = `Lives: ${gameState.lives}`;
-    document.getElementById('level').textContent = `Level: ${gameState.level}`;
+    const livesEl = document.getElementById('lives');
+    const levelEl = document.getElementById('level');
+    if (livesEl) livesEl.textContent = `Lives: ${gameState.lives}`;
+    if (levelEl) levelEl.textContent = `Level: ${gameState.level}`;
 }
 
 function playerLoseLife() {
     gameState.lives--;
     updateHUD();
+    console.log('Lost life. Lives left: ' + gameState.lives);
     
     if (gameState.lives <= 0) {
         endGame();
@@ -65,20 +69,26 @@ function playerGainLife() {
 
 function levelComplete() {
     gameState.levelComplete = true;
-    document.getElementById('levelCompleteScreen').classList.remove('hidden');
+    const screen = document.getElementById('levelCompleteScreen');
+    if (screen) screen.classList.remove('hidden');
+    console.log('Level complete!');
 }
 
 function endGame() {
     gameState.gameOver = true;
-    document.getElementById('gameOverScreen').classList.remove('hidden');
+    const screen = document.getElementById('gameOverScreen');
+    if (screen) screen.classList.remove('hidden');
+    console.log('Game over!');
 }
 
 function nextLevel() {
     gameState.level++;
     init();
-    document.getElementById('levelCompleteScreen').classList.add('hidden');
+    const screen = document.getElementById('levelCompleteScreen');
+    if (screen) screen.classList.add('hidden');
 }
 
 // Start game
+console.log('Starting Maze Pitfalls...');
 init();
 gameLoop();

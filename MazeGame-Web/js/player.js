@@ -12,6 +12,8 @@ class Player {
         this.velocityY = 0;
         this.jumping = false;
         
+        console.log('Player created at', x, y);
+        
         document.addEventListener('keydown', (e) => this.handleKeyDown(e));
         document.addEventListener('keyup', (e) => this.handleKeyUp(e));
     }
@@ -20,14 +22,17 @@ class Player {
         switch(e.key) {
             case 'ArrowLeft':
             case 'a':
+            case 'A':
                 this.velocityX = -this.speed;
                 break;
             case 'ArrowRight':
             case 'd':
+            case 'D':
                 this.velocityX = this.speed;
                 break;
             case 'ArrowUp':
             case 'w':
+            case 'W':
             case ' ':
                 if (!this.jumping) {
                     this.velocityY = -15;
@@ -41,8 +46,10 @@ class Player {
         switch(e.key) {
             case 'ArrowLeft':
             case 'a':
+            case 'A':
             case 'ArrowRight':
             case 'd':
+            case 'D':
                 this.velocityX = 0;
                 break;
         }
@@ -71,6 +78,9 @@ class Player {
     draw(ctx) {
         ctx.fillStyle = '#ff0000'; // Red player
         ctx.fillRect(this.x, this.y, this.width, this.height);
+        ctx.strokeStyle = '#ffff00';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(this.x, this.y, this.width, this.height);
     }
 
     respawn() {

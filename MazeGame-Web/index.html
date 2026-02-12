@@ -1,30 +1,392 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Maze Pitfalls - Atari Style</title>
-    <link rel="stylesheet" href="style.css">
+    <title>Maze Pitfalls</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background: #000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            font-family: Arial, sans-serif;
+            color: #fff;
+        }
+        canvas {
+            background: #1a1a1a;
+            border: 3px solid #fff;
+            display: block;
+            margin-bottom: 20px;
+        }
+        #hud {
+            font-size: 24px;
+        }
+        #lives { color: #ff0000; margin: 10px; }
+        #level { color: #00ff00; margin: 10px; }
+    </style>
 </head>
 <body>
-    <div id="gameContainer">
-        <canvas id="gameCanvas" width="800" height="600"></canvas>
-        <div id="hud">
-            <div id="lives">Lives: 10</div>
-            <div id="level">Level: 1</div>
-            <div id="gameOverScreen" class="screen hidden">
-                <h1>GAME OVER!</h1>
-                <button onclick="location.reload()">Restart</button>
-            </div>
-            <div id="levelCompleteScreen" class="screen hidden">
-                <h1>LEVEL COMPLETE!</h1>
-                <button onclick="nextLevel()">Next Level</button>
-            </div>
-        </div>
+    <h1>MAZE PITFALLS</h1>
+    <canvas id="canvas" width="800" height="600"></canvas>
+    <div id="hud">
+        <div id="lives">Lives: 10</div>
+        <div id="level">Level: 1</div>
+        <p style="margin-top: 20px; font-size: 16px;">
+            Arrow Keys = Move | Spacebar = Jump<br>
+            Reach the green EXIT!
+        </p>
     </div>
 
-    <script src="js/game.js"></script>
-    <script src="js/player.js"></script>
-    <script src="js/level.js"></script>
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        // Game state
+        let lives = 10;
+        let level = 1;
+        let gameOver = false;
+        let levelComplete = false;
+
+        // Player
+        const player = {
+            x: 50,
+            y: 550,
+            width: 20,
+            height: 20,
+            velX: 0,
+            velY: 0,
+            speed: 5,
+            jumping: false,
+            startX: 50,
+            startY: 550,
+            animFrame: 0,
+            facing: 1  // 1 = right, -1 = left
+        };
+
+        // Input
+        const keys = {};
+        window.addEventListener('keydown', (e) => {
+            keys[e.key] = true;
+            if (e.key === ' ') {
+                e.preventDefault();
+                if (!player.jumping) {
+                    player.velY = -12;
+                    player.jumping = true;
+                }
+            }
+        });
+        window.addEventListener('keyup', (e) => {
+            keys[e.key] = false;
+        });
+
+        // Level data
+        const levels = {
+            1: {
+                platforms: [
+                    { x: 0, y: 570, w: 800, h: 30 },
+                    { x: 80, y: 480, w: 120, h: 20 },
+                    { x: 280, y: 420, w: 120, h: 20 },
+                    { x: 480, y: 360, w: 120, h: 20 },
+                    { x: 680, y: 300, w: 100, h: 20 }
+                ],
+                pits: [
+                    { x: 200, y: 530, w: 70, h: 40 },
+                    { x: 400, y: 480, w: 70, h: 40 },
+                    { x: 600, y: 420, w: 70, h: 40 }
+                ],
+                spikes: [
+                    { x: 320, y: 390, w: 50, h: 30 },
+                    { x: 520, y: 330, w: 50, h: 30 }
+                ],
+                goal: { x: 700, y: 260, w: 50, h: 40 }
+            },
+            2: {
+                platforms: [
+                    { x: 0, y: 570, w: 800, h: 30 },
+                    { x: 30, y: 500, w: 100, h: 20 },
+                    { x: 180, y: 450, w: 100, h: 20 },
+                    { x: 330, y: 400, w: 100, h: 20 },
+                    { x: 480, y: 350, w: 100, h: 20 },
+                    { x: 630, y: 300, w: 100, h: 20 }
+                ],
+                pits: [
+                    { x: 130, y: 540, w: 50, h: 30 },
+                    { x: 280, y: 490, w: 50, h: 30 },
+                    { x: 430, y: 440, w: 50, h: 30 },
+                    { x: 580, y: 390, w: 50, h: 30 }
+                ],
+                spikes: [
+                    { x: 150, y: 420, w: 40, h: 30 },
+                    { x: 400, y: 370, w: 40, h: 30 }
+                ],
+                goal: { x: 700, y: 250, w: 50, h: 40 }
+            }
+        };
+
+        let currentLevel = levels[level] || levels[1];
+
+        function updatePlayer() {
+            // Horizontal movement
+            if (keys['ArrowLeft'] || keys['a'] || keys['A']) {
+                player.velX = -player.speed;
+                player.facing = -1;
+            } else if (keys['ArrowRight'] || keys['d'] || keys['D']) {
+                player.velX = player.speed;
+                player.facing = 1;
+            } else {
+                player.velX = 0;
+            }
+
+            // Update animation frame
+            if (player.velX !== 0) {
+                player.animFrame = (player.animFrame + 0.2) % 4;
+            } else {
+                player.animFrame = 0;
+            }
+
+            // Apply gravity
+            player.velY += 0.8;
+
+            // Update position
+            player.x += player.velX;
+            player.y += player.velY;
+
+            // Boundary check
+            if (player.x < 0) player.x = 0;
+            if (player.x + player.width > canvas.width) player.x = canvas.width - player.width;
+
+            // Platform collision
+            for (let p of currentLevel.platforms) {
+                if (player.x < p.x + p.w &&
+                    player.x + player.width > p.x &&
+                    player.y + player.height >= p.y &&
+                    player.y + player.height <= p.y + p.h + 10 &&
+                    player.velY >= 0) {
+                    player.y = p.y - player.height;
+                    player.velY = 0;
+                    player.jumping = false;
+                }
+            }
+
+            // Pit collision
+            for (let pit of currentLevel.pits) {
+                if (player.x < pit.x + pit.w &&
+                    player.x + player.width > pit.x &&
+                    player.y < pit.y + pit.h &&
+                    player.y + player.height > pit.y) {
+                    loseLife();
+                }
+            }
+
+            // Spike collision
+            for (let spike of currentLevel.spikes) {
+                if (player.x < spike.x + spike.w &&
+                    player.x + player.width > spike.x &&
+                    player.y < spike.y + spike.h &&
+                    player.y + player.height > spike.y) {
+                    loseLife();
+                }
+            }
+
+            // Goal collision
+            if (player.x < currentLevel.goal.x + currentLevel.goal.w &&
+                player.x + player.width > currentLevel.goal.x &&
+                player.y < currentLevel.goal.y + currentLevel.goal.h &&
+                player.y + player.height > currentLevel.goal.y) {
+                completeLevel();
+            }
+
+            // Fall off screen
+            if (player.y > canvas.height) {
+                loseLife();
+            }
+        }
+
+        function loseLife() {
+            lives--;
+            document.getElementById('lives').textContent = 'Lives: ' + lives;
+            if (lives <= 0) {
+                gameOver = true;
+                alert('GAME OVER! Your score: Level ' + level);
+                lives = 10;
+                level = 1;
+                gameOver = false;
+                currentLevel = levels[1];
+                resetPlayer();
+            } else {
+                resetPlayer();
+            }
+        }
+
+        function resetPlayer() {
+            player.x = player.startX;
+            player.y = player.startY;
+            player.velX = 0;
+            player.velY = 0;
+            player.jumping = false;
+        }
+
+        function completeLevel() {
+            level++;
+            document.getElementById('level').textContent = 'Level: ' + level;
+            currentLevel = levels[level] || levels[2];
+            resetPlayer();
+            alert('LEVEL COMPLETE!');
+        }
+
+        function draw() {
+            // Clear canvas
+            ctx.fillStyle = '#1a1a1a';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Draw platforms
+            ctx.fillStyle = '#888888';
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 2;
+            for (let p of currentLevel.platforms) {
+                ctx.fillRect(p.x, p.y, p.w, p.h);
+                ctx.strokeRect(p.x, p.y, p.w, p.h);
+                // Add shadow/texture
+                ctx.fillStyle = '#666666';
+                ctx.fillRect(p.x, p.y + p.h - 4, p.w, 4);
+                ctx.fillStyle = '#888888';
+            }
+
+            // Draw pits - make them look deep
+            for (let pit of currentLevel.pits) {
+                // Dark pit
+                ctx.fillStyle = '#1a0000';
+                ctx.fillRect(pit.x, pit.y, pit.w, pit.h);
+                // Red border
+                ctx.strokeStyle = '#ff3333';
+                ctx.lineWidth = 3;
+                ctx.strokeRect(pit.x, pit.y, pit.w, pit.h);
+                // Crosshatch pattern to show depth
+                ctx.strokeStyle = '#660000';
+                ctx.lineWidth = 1;
+                for (let i = 0; i < pit.w; i += 5) {
+                    ctx.beginPath();
+                    ctx.moveTo(pit.x + i, pit.y);
+                    ctx.lineTo(pit.x + i + pit.h, pit.y + pit.h);
+                    ctx.stroke();
+                }
+            }
+
+            // Draw spikes - actual spike shapes
+            for (let spike of currentLevel.spikes) {
+                ctx.fillStyle = '#ffff00';
+                ctx.strokeStyle = '#ff8800';
+                ctx.lineWidth = 2;
+                
+                // Draw 3 spikes
+                const spikeCount = 3;
+                const spikeWidth = spike.w / spikeCount;
+                
+                for (let i = 0; i < spikeCount; i++) {
+                    const baseX = spike.x + i * spikeWidth;
+                    const peakX = baseX + spikeWidth / 2;
+                    const baseY = spike.y + spike.h;
+                    const peakY = spike.y;
+                    
+                    ctx.beginPath();
+                    ctx.moveTo(baseX, baseY);
+                    ctx.lineTo(peakX, peakY);
+                    ctx.lineTo(baseX + spikeWidth, baseY);
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.stroke();
+                }
+            }
+
+            // Draw goal - make it look like an exit door
+            ctx.fillStyle = '#00ff00';
+            ctx.strokeStyle = '#00aa00';
+            ctx.lineWidth = 3;
+            ctx.fillRect(currentLevel.goal.x, currentLevel.goal.y, currentLevel.goal.w, currentLevel.goal.h);
+            ctx.strokeRect(currentLevel.goal.x, currentLevel.goal.y, currentLevel.goal.w, currentLevel.goal.h);
+            
+            // Add door handle
+            ctx.fillStyle = '#ffff00';
+            ctx.beginPath();
+            ctx.arc(currentLevel.goal.x + currentLevel.goal.w - 8, currentLevel.goal.y + currentLevel.goal.h / 2, 3, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.fillStyle = '#000000';
+            ctx.font = 'bold 12px Arial';
+            ctx.fillText('EXIT', currentLevel.goal.x + 5, currentLevel.goal.y + 18);
+
+            // Draw player with animation
+            drawPlayer();
+        }
+
+        function drawPlayer() {
+            const x = player.x;
+            const y = player.y;
+            const w = player.width;
+            const h = player.height;
+            
+            // Body (red)
+            ctx.fillStyle = '#ff0000';
+            ctx.fillRect(x + 2, y + 8, w - 4, h - 10);
+            
+            // Head (red)
+            ctx.fillStyle = '#ff0000';
+            ctx.beginPath();
+            ctx.arc(x + w / 2, y + 3, 3, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Eyes
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.arc(x + w / 2 - 1.5, y + 2, 1, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(x + w / 2 + 1.5, y + 2, 1, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Animate legs
+            const legPhase = Math.floor(player.animFrame) % 4;
+            let leg1Y = y + 16;
+            let leg2Y = y + 16;
+            
+            if (player.velX !== 0) {
+                // Running animation
+                if (legPhase === 0 || legPhase === 2) {
+                    leg1Y += 2;
+                } else {
+                    leg2Y += 2;
+                }
+            }
+            
+            // Draw legs
+            ctx.strokeStyle = '#ff0000';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(x + 6, y + 14);
+            ctx.lineTo(x + 6, leg1Y);
+            ctx.stroke();
+            
+            ctx.beginPath();
+            ctx.moveTo(x + 14, y + 14);
+            ctx.lineTo(x + 14, leg2Y);
+            ctx.stroke();
+            
+            // Outline
+            ctx.strokeStyle = '#ffff00';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(x, y, w, h);
+        }
+
+        function gameLoop() {
+            updatePlayer();
+            draw();
+            requestAnimationFrame(gameLoop);
+        }
+
+        gameLoop();
+    </script>
 </body>
 </html>

@@ -69,25 +69,32 @@
 
         // Input
         const keys = {};
+        let jumpPressed = false;
+        
         window.addEventListener('keydown', (e) => {
             keys[e.key] = true;
-            if (e.key === ' ') {
+            if (e.key === ' ' && !jumpPressed) {
                 e.preventDefault();
+                jumpPressed = true;
+                
                 // First jump
                 if (!player.jumping) {
                     player.velY = -12;
                     player.jumping = true;
-                    player.doubleJumpAvailable = true;  // Enable double jump
+                    player.doubleJumpAvailable = true;
                 }
                 // Double jump in air
                 else if (player.doubleJumpAvailable) {
                     player.velY = -12;
-                    player.doubleJumpAvailable = false;  // Can only double jump once
+                    player.doubleJumpAvailable = false;
                 }
             }
         });
         window.addEventListener('keyup', (e) => {
             keys[e.key] = false;
+            if (e.key === ' ') {
+                jumpPressed = false;
+            }
         });
 
         // Level data
@@ -228,6 +235,7 @@
             } else {
                 resetPlayer();
             }
+            player.doubleJumpAvailable = false;
         }
 
         function resetPlayer() {

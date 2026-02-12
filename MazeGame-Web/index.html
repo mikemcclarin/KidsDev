@@ -156,6 +156,15 @@
                 playSound('jump');
             }
         }
+        if ((e.key === 'r' || e.key === 'R' || e.key === 'Enter') && gameOver) {
+            e.preventDefault();
+            lives = 10;
+            currentLevel = 1;
+            coins = 0;
+            gameOver = false;
+            levelComplete = false;
+            resetLevel();
+        }
     });
     window.addEventListener('keyup', (e) => {
         keys[e.key] = false;
@@ -167,7 +176,7 @@
             platforms: [
                 {x: 0, y: 580, width: 800, height: 20},
                 {x: 100, y: 500, width: 200, height: 20},
-                {x: 450, y: 450, width: 200, height: 20},
+                {x: 420, y: 450, width: 200, height: 20},
                 {x: 200, y: 350, width: 150, height: 20},
                 {x: 500, y: 300, width: 150, height: 20}
             ],
@@ -260,7 +269,7 @@
         5: {
             platforms: [
                 {x: 0, y: 580, width: 150, height: 20},
-                {x: 50, y: 480, width: 100, height: 20},
+                {x: 50, y: 500, width: 100, height: 20},
                 {x: 180, y: 400, width: 100, height: 20},
                 {x: 320, y: 320, width: 100, height: 20},
                 {x: 460, y: 240, width: 100, height: 20},
@@ -279,7 +288,7 @@
             movingObstacles: [
                 {x: 620, y: 100, width: 30, height: 30, startY: 80, endY: 130, speed: 1.5, direction: 1, type: 'vertical'}
             ],
-            goal: {x: 740, y: 80, width: 40, height: 80},
+            goal: {x: 740, y: 0, width: 40, height: 80},
             playerStart: {x: 50, y: 550}
         },
         6: {
@@ -464,6 +473,7 @@
         player.velY = 0;
         player.jumping = false;
         levelComplete = false;
+        coins = 0;
         resetLevelCoins();
     }
 
@@ -826,7 +836,7 @@
                 ctx.fillText('GAME OVER', canvas.width / 2, canvas.height / 2);
             }
             ctx.font = '20px Arial';
-            ctx.fillText('Refresh to restart', canvas.width / 2, canvas.height / 2 + 80);
+            ctx.fillText('Press R or Enter to restart', canvas.width / 2, canvas.height / 2 + 80);
         }
 
         draw();

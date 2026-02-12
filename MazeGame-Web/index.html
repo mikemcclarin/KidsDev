@@ -640,6 +640,18 @@
             return;
         }
 
+        // Fall into void (off bottom of screen)
+        if (player.y > canvas.height) {
+            lives--;
+            playSound('death');
+            if (lives <= 0) {
+                gameOver = true;
+            } else {
+                resetLevel();
+            }
+            return;
+        }
+
         // Coin collision
         checkCoinCollision();
 

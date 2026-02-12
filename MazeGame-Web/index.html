@@ -23,6 +23,7 @@
         }
         #hud {
             font-size: 24px;
+            text-align: center;
         }
         #lives { color: #ff0000; margin: 10px; }
         #level { color: #00ff00; margin: 10px; }
@@ -41,481 +42,307 @@
     </div>
 
     <script>
-        const canvas = document.getElementById('canvas');
-        const ctx = canvas.getContext('2d');
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
 
-        // Game state
-        let lives = 10;
-        let level = 1;
-        let gameOver = false;
-        let levelComplete = false;
+    // Game state
+    let lives = 10;
+    let currentLevel = 1;
+    let gameOver = false;
+    let levelComplete = false;
 
-        // Player
-        const player = {
-            x: 50,
-            y: 550,
-            width: 20,
-            height: 20,
-            velX: 0,
-            velY: 0,
-            speed: 5,
-            jumping: false,
-            startX: 50,
-            startY: 550,
-            animFrame: 0,
-            facing: 1  // 1 = right, -1 = left
-        };
+    // Player
+    const player = {
+        x: 50,
+        y: 550,
+        width: 20,
+        height: 20,
+        velX: 0,
+        velY: 0,
+        speed: 5,
+        jumping: false,
+        startX: 50,
+        startY: 550,
+        animFrame: 0,
+        facing: 1
+    };
 
-        // Input
-        const keys = {};
-        window.addEventListener('keydown', (e) => {
-            keys[e.key] = true;
-            if (e.key === ' ') {
-                e.preventDefault();
-                if (!player.jumping) {
-                    player.velY = -12;
-                    player.jumping = true;
+    // Input
+    const keys = {};
+    window.addEventListener('keydown', (e) => {
+        keys[e.key] = true;
+        if (e.key === ' ') {
+            e.preventDefault();
+            if (!player.jumping) {
+                player.velY = -12;
+                player.jumping = true;
+            }
+        }
+    });
+    window.addEventListener('keyup', (e) => {
+        keys[e.key] = false;
+    });
+
+    // Levels
+    const levels = {
+        1: {
+            platforms: [
+                {x: 0, y: 580, width: 800, height: 20},
+                {x: 100, y: 500, width: 200, height: 20},
+                {x: 450, y: 450, width: 200, height: 20},
+                {x: 200, y: 350, width: 150, height: 20},
+                {x: 500, y: 300, width: 150, height: 20}
+            ],
+            pits: [
+                {x: 350, y: 520, width: 80, height: 60}
+            ],
+            spikes: [
+                {x: 600, y: 560, width: 80, height: 40}
+            ],
+            goal: {x: 750, y: 500, width: 40, height: 80}
+        },
+        2: {
+            platforms: [
+                {x: 0, y: 580, width: 800, height: 20},
+                {x: 50, y: 480, width: 120, height: 20},
+                {x: 250, y: 420, width: 120, height: 20},
+                {x: 450, y: 360, width: 120, height: 20},
+                {x: 650, y: 300, width: 120, height: 20}
+            ],
+            pits: [
+                {x: 200, y: 500, width: 40, height: 80},
+                {x: 400, y: 440, width: 40, height: 80},
+                {x: 600, y: 380, width: 40, height: 80}
+            ],
+            spikes: [
+                {x: 100, y: 560, width: 40, height: 40},
+                {x: 500, y: 560, width: 40, height: 40}
+            ],
+            goal: {x: 730, y: 220, width: 40, height: 80}
+        }
+    };
+
+    function resetLevel() {
+        player.x = player.startX;
+        player.y = player.startY;
+        player.velX = 0;
+        player.velY = 0;
+        player.jumping = false;
+        levelComplete = false;
+    }
+
+    function updatePlayer() {
+        // Horizontal movement
+        player.velX = 0;
+        if (keys['ArrowLeft'] || keys['a'] || keys['A']) {
+            player.velX = -player.speed;
+            player.facing = -1;
+        }
+        if (keys['ArrowRight'] || keys['d'] || keys['D']) {
+            player.velX = player.speed;
+            player.facing = 1;
+        }
+
+        player.x += player.velX;
+
+        // Gravity
+        player.velY += 0.8;
+        player.y += player.velY;
+
+        // Boundary check
+        if (player.x < 0) player.x = 0;
+        if (player.x + player.width > canvas.width) player.x = canvas.width - player.width;
+
+        // Platform collision
+        let onPlatform = false;
+        const level = levels[currentLevel];
+        for (let platform of level.platforms) {
+            if (
+                player.velY >= 0 &&
+                player.y + player.height <= platform.y + 5 &&
+                player.y + player.height + player.velY >= platform.y &&
+                player.x + player.width > platform.x &&
+                player.x < platform.x + platform.width
+            ) {
+                player.y = platform.y - player.height;
+                player.velY = 0;
+                player.jumping = false;
+                onPlatform = true;
+            }
+        }
+
+        // Pit collision
+        for (let pit of level.pits) {
+            if (
+                player.x + player.width > pit.x &&
+                player.x < pit.x + pit.width &&
+                player.y + player.height > pit.y &&
+                player.y < pit.y + pit.height
+            ) {
+                lives--;
+                if (lives <= 0) {
+                    gameOver = true;
+                } else {
+                    resetLevel();
                 }
+                return;
             }
-        });
-        window.addEventListener('keyup', (e) => {
-            keys[e.key] = false;
-        });
+        }
 
-        // Level data
-        const levels = {
-            1: {
-                platforms: [
-                    { x: 0, y: 570, w: 800, h: 30 },
-                    { x: 80, y: 480, w: 120, h: 20 },
-                    { x: 280, y: 420, w: 120, h: 20 },
-                    { x: 480, y: 360, w: 120, h: 20 },
-                    { x: 680, y: 300, w: 100, h: 20 }
-                ],
-                pits: [
-                    { x: 200, y: 530, w: 70, h: 40 },
-                    { x: 400, y: 480, w: 70, h: 40 },
-                    { x: 600, y: 420, w: 70, h: 40 }
-                ],
-                spikes: [
-                    { x: 320, y: 390, w: 50, h: 30 },
-                    { x: 520, y: 330, w: 50, h: 30 }
-                ],
-                goal: { x: 700, y: 260, w: 50, h: 40 }
-            },
-            2: {
-                platforms: [
-                    { x: 0, y: 570, w: 800, h: 30 },
-                    { x: 30, y: 500, w: 100, h: 20 },
-                    { x: 180, y: 450, w: 100, h: 20 },
-                    { x: 330, y: 400, w: 100, h: 20 },
-                    { x: 480, y: 350, w: 100, h: 20 },
-                    { x: 630, y: 300, w: 100, h: 20 }
-                ],
-                pits: [
-                    { x: 130, y: 540, w: 50, h: 30 },
-                    { x: 280, y: 490, w: 50, h: 30 },
-                    { x: 430, y: 440, w: 50, h: 30 },
-                    { x: 580, y: 390, w: 50, h: 30 }
-                ],
-                spikes: [
-                    { x: 150, y: 420, w: 40, h: 30 },
-                    { x: 400, y: 370, w: 40, h: 30 }
-                ],
-                goal: { x: 700, y: 250, w: 50, h: 40 }
+        // Spike collision
+        for (let spike of level.spikes) {
+            if (
+                player.x + player.width > spike.x &&
+                player.x < spike.x + spike.width &&
+                player.y + player.height > spike.y &&
+                player.y < spike.y + spike.height
+            ) {
+                lives--;
+                if (lives <= 0) {
+                    gameOver = true;
+                } else {
+                    resetLevel();
+                }
+                return;
             }
-        };
+        }
 
-        let currentLevel = levels[level] || levels[1];
+        // Goal collision
+        if (
+            player.x + player.width > level.goal.x &&
+            player.x < level.goal.x + level.goal.width &&
+            player.y + player.height > level.goal.y &&
+            player.y < level.goal.y + level.goal.height
+        ) {
+            levelComplete = true;
+        }
 
-        function updatePlayer() {
-            // Horizontal movement
-            if (keys['ArrowLeft'] || keys['a'] || keys['A']) {
-                player.velX = -player.speed;
-                player.facing = -1;
-            } else if (keys['ArrowRight'] || keys['d'] || keys['D']) {
-                player.velX = player.speed;
-                player.facing = 1;
+        // Animation
+        if (onPlatform && player.velX !== 0) {
+            player.animFrame = (player.animFrame + 0.15) % 2;
+        } else {
+            player.animFrame = 0;
+        }
+    }
+
+    function drawPlayer() {
+        ctx.fillStyle = '#ffff00';
+        ctx.save();
+        ctx.translate(player.x + player.width / 2, player.y);
+        ctx.scale(player.facing, 1);
+        ctx.translate(-(player.width / 2), 0);
+
+        // Body
+        ctx.fillRect(0, 0, player.width, 12);
+
+        // Head
+        ctx.beginPath();
+        ctx.arc(player.width / 2, -2, 4, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Legs
+        if (player.jumping) {
+            ctx.fillRect(6, 12, 4, 8);
+            ctx.fillRect(10, 12, 4, 8);
+        } else if (Math.abs(player.velX) > 0) {
+            const legFrame = Math.floor(player.animFrame);
+            if (legFrame === 0) {
+                ctx.fillRect(6, 12, 4, 8);
+                ctx.fillRect(10, 12, 4, 8);
             } else {
-                player.velX = 0;
+                ctx.fillRect(5, 14, 4, 6);
+                ctx.fillRect(11, 10, 4, 10);
             }
+        } else {
+            ctx.fillRect(6, 12, 4, 8);
+            ctx.fillRect(10, 12, 4, 8);
+        }
 
-            // Update animation frame
-            if (player.velX !== 0) {
-                player.animFrame = (player.animFrame + 0.2) % 4;
-            } else {
-                player.animFrame = 0;
-            }
+        ctx.restore();
+    }
 
-            // Apply gravity
-            player.velY += 0.8;
+    function draw() {
+        ctx.fillStyle = '#1a1a1a';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            // Update position
-            player.x += player.velX;
-            player.y += player.velY;
+        const level = levels[currentLevel];
 
-            // Boundary check
-            if (player.x < 0) player.x = 0;
-            if (player.x + player.width > canvas.width) player.x = canvas.width - player.width;
+        // Draw platforms
+        ctx.fillStyle = '#00ff00';
+        for (let platform of level.platforms) {
+            ctx.fillRect(platform.x, platform.y, platform.width, platform.height);
+        }
 
-            // Platform collision
-            for (let p of currentLevel.platforms) {
-                if (player.x < p.x + p.w &&
-                    player.doubleJumpAvailable = false;  // Reset double jump when landing
-                    player.x + player.width > p.x &&
-                    player.y + player.height >= p.y &&
-                    player.y + player.height <= p.y + p.h + 10 &&
-                    player.velY >= 0) {
-                    player.y = p.y - player.height;
-                    player.velY = 0;
-                    player.jumping = false;
-                }
-            }
-
-            // Pit collision
-            for (let pit of currentLevel.pits) {
-                if (player.x < pit.x + pit.w &&
-                    player.x + player.width > pit.x &&
-                    player.y < pit.y + pit.h &&
-                    player.y + player.height > pit.y) {
-                    loseLife();
-                }
-            }
-
-            // Spike collision
-            for (let spike of currentLevel.spikes) {
-                if (player.x < spike.x + spike.w &&
-                    player.x + player.width > spike.x &&
-                    player.y < spike.y + spike.h &&
-                    player.y + player.height > spike.y) {
-                    loseLife();
-                }
-            }
-
-            // Goal collision
-            if (player.x < currentLevel.goal.x + currentLevel.goal.w &&
-                player.x + player.width > currentLevel.goal.x &&
-                player.y < currentLevel.goal.y + currentLevel.goal.h &&
-                player.y + player.height > currentLevel.goal.y) {
-                completeLevel();
-            }
-
-            // Fall off screen
-            if (player.y > canvas.height) {
-                loseLife();
+        // Draw pits
+        ctx.fillStyle = '#444';
+        ctx.strokeStyle = '#666';
+        ctx.lineWidth = 2;
+        for (let pit of level.pits) {
+            ctx.fillRect(pit.x, pit.y, pit.width, pit.height);
+            for (let i = 0; i < pit.width; i += 8) {
+                ctx.beginPath();
+                ctx.moveTo(pit.x + i, pit.y);
+                ctx.lineTo(pit.x + i + pit.height, pit.y + pit.height);
+                ctx.stroke();
             }
         }
 
-        function loseLife() {
-            lives--;
-            document.getElementById('lives').textContent = 'Lives: ' + lives;
-            if (lives <= 0) {
-                gameOver = true;
-                alert('GAME OVER! Your score: Level ' + level);
-                lives = 10;
-                level = 1;
-                gameOver = false;
-                currentLevel = levels[1];
-                resetPlayer();
-            } else {
-                resetPlayer();
-            }
-            player.doubleJumpAvailable = false;
-        }
-
-        function resetPlayer() {
-            player.x = player.startX;
-            player.y = player.startY;
-            player.velX = 0;
-            player.velY = 0;
-            player.jumping = false;
-        }
-
-        function completeLevel() {
-            level++;
-            document.getElementById('level').textContent = 'Level: ' + level;
-            currentLevel = levels[level] || levels[2];
-            resetPlayer();
-            alert('LEVEL COMPLETE!');
-        }
-
-        function draw() {
-            // Clear canvas
-            ctx.fillStyle = '#1a1a1a';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-            // Draw platforms
-            ctx.fillStyle = '#888888';
-            ctx.strokeStyle = '#ffffff';
-            ctx.lineWidth = 2;
-            for (let p of currentLevel.platforms) {
-                ctx.fillRect(p.x, p.y, p.w, p.h);
-                ctx.strokeRect(p.x, p.y, p.w, p.h);
-                // Add shadow/texture
-                ctx.fillStyle = '#666666';
-                ctx.fillRect(p.x, p.y + p.h - 4, p.w, 4);
-                ctx.fillStyle = '#888888';
-            }
-
-            // Draw pits - make them look deep
-            for (let pit of currentLevel.pits) {
-                // Dark pit
-                ctx.fillStyle = '#1a0000';
-                ctx.fillRect(pit.x, pit.y, pit.w, pit.h);
-                // Red border
-                ctx.strokeStyle = '#ff3333';
-                ctx.lineWidth = 3;
-                ctx.strokeRect(pit.x, pit.y, pit.w, pit.h);
-                // Crosshatch pattern to show depth
-                ctx.strokeStyle = '#660000';
-                ctx.lineWidth = 1;
-                for (let i = 0; i < pit.w; i += 5) {
-                    ctx.beginPath();
-                    ctx.moveTo(pit.x + i, pit.y);
-                    ctx.lineTo(pit.x + i + pit.h, pit.y + pit.h);
-                    ctx.stroke();
-                }
-            }
-
-            // Draw spikes - actual spike shapes
-            for (let spike of currentLevel.spikes) {
-                ctx.fillStyle = '#ffff00';
-                ctx.strokeStyle = '#ff8800';
-                ctx.lineWidth = 2;
-                
-                // Draw 3 spikes
-                const spikeCount = 3;
-                const spikeWidth = spike.w / spikeCount;
-                
-                for (let i = 0; i < spikeCount; i++) {
-                    const baseX = spike.x + i * spikeWidth;
-                    const peakX = baseX + spikeWidth / 2;
-                    const baseY = spike.y + spike.h;
-                    const peakY = spike.y;
-                    
-                    ctx.beginPath();
-                    ctx.moveTo(baseX, baseY);
-                    ctx.lineTo(peakX, peakY);
-                    ctx.lineTo(baseX + spikeWidth, baseY);
-                    ctx.closePath();
-                    ctx.fill();
-                    ctx.stroke();
-                }
-            }
-
-            // Draw goal - make it look like an exit door
-            ctx.fillStyle = '#00ff00';
-            ctx.strokeStyle = '#00aa00';
-            ctx.lineWidth = 3;
-            ctx.fillRect(currentLevel.goal.x, currentLevel.goal.y, currentLevel.goal.w, currentLevel.goal.h);
-            ctx.strokeRect(currentLevel.goal.x, currentLevel.goal.y, currentLevel.goal.w, currentLevel.goal.h);
-            
-            // Add door handle
-            ctx.fillStyle = '#ffff00';
+        // Draw spikes
+        ctx.fillStyle = '#ff6600';
+        for (let spike of level.spikes) {
             ctx.beginPath();
-            ctx.arc(currentLevel.goal.x + currentLevel.goal.w - 8, currentLevel.goal.y + currentLevel.goal.h / 2, 3, 0, Math.PI * 2);
+            ctx.moveTo(spike.x, spike.y + spike.height);
+            ctx.lineTo(spike.x + spike.width / 2, spike.y);
+            ctx.lineTo(spike.x + spike.width, spike.y + spike.height);
             ctx.fill();
-            
-            ctx.fillStyle = '#000000';
-            ctx.font = 'bold 12px Arial';
-            ctx.fillText('EXIT', currentLevel.goal.x + 5, currentLevel.goal.y + 18);
-
-            // Draw player with animation
-            drawPlayer();
         }
 
-        function drawPlayer() {
-            const x = player.x;
-            const y = player.y;
-            const w = player.width;
-            const h = player.height;
-            
-            // Determine pose
-            let isJumping = player.jumping || player.velY < -2;
-            let isFalling = player.velY > 2;
-            let isRunning = player.velX !== 0 && !isJumping && !isFalling;
-            
-            // Add bounce to running
-            let bobAmount = 0;
-            if (isRunning) {
-                bobAmount = Math.sin(player.animFrame * Math.PI * 2) * 1.5;
-            }
-            
-            const bodyY = y + bobAmount;
-            
-            // Draw shadow on ground (subtle)
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
-            ctx.fillRect(x + 3, y + h + 1, w - 6, 2);
-            
-            // JUMPING POSE
-            if (isJumping) {
-                // Head
-                ctx.fillStyle = '#ff0000';
-                ctx.beginPath();
-                ctx.arc(x + w / 2, bodyY + 2, 3.5, 0, Math.PI * 2);
-                ctx.fill();
-                
-                // Eyes
-                ctx.fillStyle = '#ffffff';
-                ctx.beginPath();
-                ctx.arc(x + w / 2 - 1.5, bodyY + 1, 1.2, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.beginPath();
-                ctx.arc(x + w / 2 + 1.5, bodyY + 1, 1.2, 0, Math.PI * 2);
-                ctx.fill();
-                
-                // Body (stretched)
-                ctx.fillStyle = '#ff0000';
-                ctx.fillRect(x + 2, bodyY + 7, w - 4, h - 12);
-                
-                // Arms up (celebrating)
-                ctx.strokeStyle = '#ff0000';
-                ctx.lineWidth = 2;
-                ctx.beginPath();
-                ctx.moveTo(x + 3, bodyY + 9);
-                ctx.lineTo(x + 3, bodyY + 4);
-                ctx.stroke();
-                ctx.beginPath();
-                ctx.moveTo(x + w - 3, bodyY + 9);
-                ctx.lineTo(x + w - 3, bodyY + 4);
-                ctx.stroke();
-                
-                // Legs straight
-                ctx.beginPath();
-                ctx.moveTo(x + 6, bodyY + 15);
-                ctx.lineTo(x + 6, bodyY + h - 2);
-                ctx.stroke();
-                ctx.beginPath();
-                ctx.moveTo(x + 14, bodyY + 15);
-                ctx.lineTo(x + 14, bodyY + h - 2);
-                ctx.stroke();
-            }
-            // FALLING POSE
-            else if (isFalling) {
-                // Head
-                ctx.fillStyle = '#ff0000';
-                ctx.beginPath();
-                ctx.arc(x + w / 2, bodyY + 2, 3.5, 0, Math.PI * 2);
-                ctx.fill();
-                
-                // Eyes (scared)
-                ctx.fillStyle = '#ffffff';
-                ctx.beginPath();
-                ctx.arc(x + w / 2 - 1.5, bodyY, 1.2, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.beginPath();
-                ctx.arc(x + w / 2 + 1.5, bodyY, 1.2, 0, Math.PI * 2);
-                ctx.fill();
-                
-                // Body
-                ctx.fillStyle = '#ff0000';
-                ctx.fillRect(x + 2, bodyY + 7, w - 4, h - 12);
-                
-                // Arms flailing
-                ctx.strokeStyle = '#ff0000';
-                ctx.lineWidth = 2;
-                const armAngle = Math.sin(Date.now() / 100) * 0.3;
-                ctx.beginPath();
-                ctx.moveTo(x + 3, bodyY + 9);
-                ctx.lineTo(x + 3 - 3 * Math.cos(armAngle), bodyY + 9 - 3 * Math.sin(armAngle));
-                ctx.stroke();
-                ctx.beginPath();
-                ctx.moveTo(x + w - 3, bodyY + 9);
-                ctx.lineTo(x + w - 3 + 3 * Math.cos(armAngle), bodyY + 9 - 3 * Math.sin(armAngle));
-                ctx.stroke();
-                
-                // Legs flailing
-                ctx.beginPath();
-                ctx.moveTo(x + 6, bodyY + 15);
-                ctx.lineTo(x + 4, bodyY + h);
-                ctx.stroke();
-                ctx.beginPath();
-                ctx.moveTo(x + 14, bodyY + 15);
-                ctx.lineTo(x + 16, bodyY + h);
-                ctx.stroke();
-            }
-            // RUNNING/IDLE POSE
-            else {
-                // Head
-                ctx.fillStyle = '#ff0000';
-                ctx.beginPath();
-                ctx.arc(x + w / 2, bodyY + 3, 3, 0, Math.PI * 2);
-                ctx.fill();
-                
-                // Eyes (happy)
-                ctx.fillStyle = '#ffffff';
-                ctx.beginPath();
-                ctx.arc(x + w / 2 - 1.5, bodyY + 2, 1, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.beginPath();
-                ctx.arc(x + w / 2 + 1.5, bodyY + 2, 1, 0, Math.PI * 2);
-                ctx.fill();
-                
-                // Mouth (smile when running)
-                if (isRunning) {
-                    ctx.strokeStyle = '#ffffff';
-                    ctx.lineWidth = 1;
-                    ctx.beginPath();
-                    ctx.arc(x + w / 2, bodyY + 4, 1.5, 0, Math.PI);
-                    ctx.stroke();
-                }
-                
-                // Body
-                ctx.fillStyle = '#ff0000';
-                ctx.fillRect(x + 2, bodyY + 8, w - 4, h - 12);
-                
-                // Arms swinging (opposite to legs)
-                ctx.strokeStyle = '#ff0000';
-                ctx.lineWidth = 2;
-                const legPhase = Math.floor(player.animFrame) % 4;
-                const armSwing = Math.sin(player.animFrame * Math.PI) * 1.5;
-                
-                ctx.beginPath();
-                ctx.moveTo(x + 3, bodyY + 10);
-                ctx.lineTo(x + 3 + armSwing, bodyY + 13);
-                ctx.stroke();
-                ctx.beginPath();
-                ctx.moveTo(x + w - 3, bodyY + 10);
-                ctx.lineTo(x + w - 3 - armSwing, bodyY + 13);
-                ctx.stroke();
-                
-                // Animate legs
-                let leg1Y = bodyY + 16;
-                let leg2Y = bodyY + 16;
-                
-                if (isRunning) {
-                    if (legPhase === 0 || legPhase === 1) {
-                        leg1Y += 2;
-                    } else {
-                        leg2Y += 2;
-                    }
-                }
-                
-                // Draw legs
-                ctx.beginPath();
-                ctx.moveTo(x + 6, bodyY + 14);
-                ctx.lineTo(x + 6, leg1Y);
-                ctx.stroke();
-                
-                ctx.beginPath();
-                ctx.moveTo(x + 14, bodyY + 14);
-                ctx.lineTo(x + 14, leg2Y);
-                ctx.stroke();
-            }
-            
-            // Outline/glow
-            ctx.strokeStyle = '#ffff00';
-            ctx.lineWidth = 1.5;
-            ctx.strokeRect(x - 1, y - 1, w + 2, h + 2);
-        }
+        // Draw goal
+        ctx.fillStyle = '#00ff00';
+        ctx.fillRect(level.goal.x, level.goal.y, level.goal.width, level.goal.height);
+        ctx.fillStyle = '#000';
+        ctx.fillRect(level.goal.x + 5, level.goal.y + 10, 30, 15);
 
-        function gameLoop() {
+        // Draw player
+        drawPlayer();
+
+        // Update HUD
+        document.getElementById('lives').textContent = 'Lives: ' + lives;
+        document.getElementById('level').textContent = 'Level: ' + currentLevel;
+    }
+
+    function gameLoop() {
+        if (!gameOver && !levelComplete) {
             updatePlayer();
-            draw();
-            requestAnimationFrame(gameLoop);
+        } else if (levelComplete) {
+            if (currentLevel < 2) {
+                currentLevel++;
+                resetLevel();
+            } else {
+                gameOver = true;
+            }
         }
 
-        gameLoop();
+        if (gameOver) {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#fff';
+            ctx.font = 'bold 40px Arial';
+            ctx.textAlign = 'center';
+            if (lives > 0) {
+                ctx.fillText('YOU WIN!', canvas.width / 2, canvas.height / 2);
+            } else {
+                ctx.fillText('GAME OVER', canvas.width / 2, canvas.height / 2);
+            }
+            ctx.font = '20px Arial';
+            ctx.fillText('Refresh to restart', canvas.width / 2, canvas.height / 2 + 50);
+        }
+
+        draw();
+        requestAnimationFrame(gameLoop);
+    }
+
+    gameLoop();
     </script>
 </body>
 </html>

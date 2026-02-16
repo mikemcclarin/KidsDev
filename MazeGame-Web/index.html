@@ -2211,7 +2211,7 @@
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
 
-        const text = secondsLeft > 0 ? String(secondsLeft) : 'GO!';
+        const text = secondsLeft > 1 ? 'Ok' : secondsLeft > 0 ? 'Ready?' : 'GO!';
         ctx.fillText(text, canvas.width / 2, canvas.height / 2);
         ctx.restore();
 

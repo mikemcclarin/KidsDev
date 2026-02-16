@@ -168,6 +168,10 @@
     let deathParticles = [];
     let deathFreezeFrames = 0;
 
+    // Ready countdown state (level transitions only, not death respawn)
+    let readyCountdown = 0;
+    const READY_DURATION = 120; // 2 seconds at 60fps
+
     // Powerup state
     const powerups = {
         doubleJump: { active: false, maxAirJumps: 2, airJumpsRemaining: 0 },
@@ -532,7 +536,8 @@
         initAudio();
         if (e.key === ' ') {
             e.preventDefault();
-            if (!player.jumping) {
+            if (readyCountdown > 0) { /* blocked during countdown */ }
+            else if (!player.jumping) {
                 player.velY = -12;
                 player.jumping = true;
                 playSound('jump');
@@ -543,7 +548,7 @@
                 spawnAirJumpRings(player.x + player.width / 2, player.y + player.height);
             }
         }
-        if (e.key === 'Shift') {
+        if (e.key === 'Shift' && readyCountdown <= 0) {
             e.preventDefault();
             activateWarpDash();
         }
@@ -557,6 +562,7 @@
             deathAnimating = false;
             deathParticles = [];
             particles = [];
+            readyCountdown = 0;
             resetPowerups();
             resetAllLevelPickups();
             resetLevel();
@@ -2184,6 +2190,42 @@
         drawPowerupIcon(iconX, iconY, 'SH', '#aa44ff', powerups.shield.active);
     }
 
+    // ===================== READY COUNTDOWN =====================
+
+    function drawReadyOverlay() {
+        // Dim overlay
+        ctx.fillStyle = 'rgba(0, 0, 10, 0.4)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        const secondsLeft = Math.ceil(readyCountdown / 60);
+        const frameFrac = (readyCountdown % 60) / 60;
+        const scale = 1 + frameFrac * 0.5; // Pulse on each new second
+        const alpha = 0.6 + 0.4 * frameFrac;
+
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        ctx.shadowColor = '#00ffff';
+        ctx.shadowBlur = 25;
+        ctx.fillStyle = '#00ffff';
+        ctx.font = `bold ${Math.floor(48 * scale)}px Arial`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        const text = secondsLeft > 0 ? String(secondsLeft) : 'GO!';
+        ctx.fillText(text, canvas.width / 2, canvas.height / 2);
+        ctx.restore();
+
+        // Level name subtitle
+        ctx.save();
+        ctx.globalAlpha = 0.8;
+        ctx.fillStyle = '#aaddff';
+        ctx.font = 'bold 20px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('LEVEL ' + currentLevel, canvas.width / 2, canvas.height / 2 - 50);
+        ctx.restore();
+    }
+
     // ===================== GAME OVER / WIN SCREENS =====================
 
     function drawGameOverScreen() {
@@ -2310,7 +2352,7 @@
             return;
         }
 
-        if (!gameOver && !levelComplete) {
+        if (!gameOver && !levelComplete && readyCountdown <= 0) {
             updatePlayer();
             updateMovingObstacles();
             spawnAmbientParticles();
@@ -2318,15 +2360,24 @@
             if (currentLevel < 15) {
                 currentLevel++;
                 resetLevel();
+                readyCountdown = READY_DURATION;
             } else {
                 gameOver = true;
             }
+        } else if (readyCountdown > 0) {
+            readyCountdown--;
+            updateMovingObstacles();
+            spawnAmbientParticles();
         }
 
         updateParticles();
         drawScene();
         drawParticles();
         drawHUD();
+
+        if (readyCountdown > 0) {
+            drawReadyOverlay();
+        }
 
         if (gameOver) {
             drawGameOverScreen();

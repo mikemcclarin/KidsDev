@@ -187,6 +187,9 @@
     const canvas = document.getElementById('canvas');
     const ctx = canvas.getContext('2d');
 
+    // ===================== MOBILE DETECTION =====================
+    const isMobile = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+
     // ===================== INFRASTRUCTURE =====================
 
     let frameCount = 0;
@@ -766,8 +769,6 @@
     });
 
     // ===================== MOBILE TOUCH CONTROLS =====================
-
-    const isMobile = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
 
     if (isMobile) {
         document.body.classList.add('mobile-active');

@@ -300,6 +300,56 @@
     let readyCountdown = 0;
     const READY_DURATION = 120; // 2 seconds at 60fps
 
+    // Powerup popup state
+    const seenPowerups = {};
+    let powerupPopup = { active: false, timer: 0, name: '', description: '', color: '#fff' };
+    const POPUP_FIRST_DURATION = 120;   // 2 seconds for first pickup
+    const POPUP_REPEAT_DURATION = 60;   // 1 second for subsequent pickups
+
+    const powerupInfo = {
+        doubleJump: { name: 'Double Jump', description: 'Jump again in mid-air!' },
+        jetpack:    { name: 'Jetpack', description: 'Hold jump to fly!' },
+        warpDash:   { name: 'Warp Dash', description: 'Press Shift to teleport forward!' },
+        shield:     { name: 'Shield', description: 'Absorbs one hit from hazards!' }
+    };
+
+    function showPowerupPopup(type) {
+        const info = powerupInfo[type];
+        if (!info) return;
+        const isFirst = !seenPowerups[type];
+        seenPowerups[type] = true;
+        powerupPopup.active = true;
+        powerupPopup.timer = isFirst ? POPUP_FIRST_DURATION : POPUP_REPEAT_DURATION;
+        powerupPopup.name = info.name;
+        powerupPopup.description = isFirst ? info.description : '';
+        powerupPopup.color = getPowerupColor(type);
+    }
+
+    function drawPowerupPopup() {
+        if (!powerupPopup.active) return;
+        const fadeIn = Math.min(1, (powerupPopup.timer > 10) ? 1 : powerupPopup.timer / 10);
+        ctx.save();
+        ctx.globalAlpha = fadeIn * 0.85;
+        ctx.fillStyle = '#000';
+        const boxH = powerupPopup.description ? 70 : 50;
+        const boxY = canvas.height / 2 - boxH / 2;
+        ctx.fillRect(0, boxY, canvas.width, boxH);
+        ctx.globalAlpha = fadeIn;
+        ctx.fillStyle = powerupPopup.color;
+        ctx.font = 'bold 24px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        if (powerupPopup.description) {
+            ctx.fillText(powerupPopup.name, canvas.width / 2, canvas.height / 2 - 12);
+            ctx.fillStyle = '#ffffff';
+            ctx.font = '16px Arial';
+            ctx.fillText(powerupPopup.description, canvas.width / 2, canvas.height / 2 + 16);
+        } else {
+            ctx.fillText(powerupPopup.name, canvas.width / 2, canvas.height / 2);
+        }
+        ctx.restore();
+    }
+
     // Powerup state
     const powerups = {
         doubleJump: { active: false, maxAirJumps: 2, airJumpsRemaining: 0 },
@@ -622,6 +672,7 @@
                 pickup.collected = true;
                 activatePowerup(pickup.type);
                 playSound('powerup');
+                showPowerupPopup(pickup.type);
                 for (let i = 0; i < 12; i++) {
                     const angle = (i / 12) * Math.PI * 2;
                     spawnParticle({
@@ -664,7 +715,7 @@
         initAudio();
         if (e.key === ' ') {
             e.preventDefault();
-            if (readyCountdown > 0) { /* blocked during countdown */ }
+            if (readyCountdown > 0 || powerupPopup.active) { /* blocked during countdown/popup */ }
             else if (!player.jumping) {
                 player.velY = -12;
                 player.jumping = true;
@@ -676,7 +727,7 @@
                 spawnAirJumpRings(player.x + player.width / 2, player.y + player.height);
             }
         }
-        if (e.key === 'Shift' && readyCountdown <= 0) {
+        if (e.key === 'Shift' && readyCountdown <= 0 && !powerupPopup.active) {
             e.preventDefault();
             activateWarpDash();
         }
@@ -691,6 +742,7 @@
             deathParticles = [];
             particles = [];
             readyCountdown = 0;
+            powerupPopup.active = false;
             resetPowerups();
             resetAllLevelPickups();
             resetLevel();
@@ -760,7 +812,7 @@
 
     setupTouchButton('btn-jump', ' ', {
         onPress: function() {
-            if (readyCountdown > 0) return;
+            if (readyCountdown > 0 || powerupPopup.active) return;
             if (!player.jumping) {
                 player.velY = -12;
                 player.jumping = true;
@@ -790,6 +842,7 @@
                 deathParticles = [];
                 particles = [];
                 readyCountdown = 0;
+                powerupPopup.active = false;
                 resetPowerups();
                 resetAllLevelPickups();
                 resetLevel();
@@ -2844,7 +2897,11 @@
             return;
         }
 
-        if (!gameOver && !levelComplete && readyCountdown <= 0) {
+        if (powerupPopup.active) {
+            powerupPopup.timer--;
+            if (powerupPopup.timer <= 0) powerupPopup.active = false;
+            spawnAmbientParticles();
+        } else if (!gameOver && !levelComplete && readyCountdown <= 0) {
             updatePlayer();
             updateMovingObstacles();
             spawnAmbientParticles();
@@ -2870,6 +2927,8 @@
         if (readyCountdown > 0) {
             drawReadyOverlay();
         }
+
+        drawPowerupPopup();
 
         if (gameOver) {
             drawGameOverScreen();

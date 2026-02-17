@@ -99,6 +99,18 @@
             height: 70px;
             font-size: 22px;
         }
+        #btn-warp {
+            right: 110px;
+            bottom: 20px;
+            width: 70px;
+            height: 70px;
+            font-size: 16px;
+            display: none;
+            border-color: rgba(0, 255, 255, 0.6);
+        }
+        #btn-warp.available {
+            display: flex;
+        }
         #btn-restart {
             left: 50%;
             transform: translateX(-50%);
@@ -151,6 +163,7 @@
         <div class="touch-btn" id="btn-left">&larr;</div>
         <div class="touch-btn" id="btn-right">&rarr;</div>
         <div class="touch-btn" id="btn-jump">JUMP</div>
+        <div class="touch-btn" id="btn-warp">WARP</div>
         <div class="touch-btn" id="btn-restart">RESTART</div>
     </div>
 
@@ -309,7 +322,7 @@
     const powerupInfo = {
         doubleJump: { name: 'Double Jump', description: 'Jump again in mid-air!' },
         jetpack:    { name: 'Jetpack', description: 'Hold jump to fly!' },
-        warpDash:   { name: 'Warp Dash', description: 'Press Shift to teleport forward!' },
+        warpDash:   { name: 'Warp Dash', description: isMobile ? 'Press WARP to teleport forward!' : 'Press Shift to teleport forward!' },
         shield:     { name: 'Shield', description: 'Absorbs one hit from hazards!' }
     };
 
@@ -823,6 +836,14 @@
                 playSound('airJump');
                 spawnAirJumpRings(player.x + player.width / 2, player.y + player.height);
             }
+        }
+    });
+
+    // Warp dash button — only visible when powerup is active
+    const btnWarp = document.getElementById('btn-warp');
+    setupTouchButton('btn-warp', 'Shift', {
+        onPress: function() {
+            if (readyCountdown <= 0 && !powerupPopup.active) activateWarpDash();
         }
     });
 
@@ -2935,6 +2956,15 @@
             if (isMobile && btnRestart) btnRestart.classList.add('show');
         } else {
             if (isMobile && btnRestart) btnRestart.classList.remove('show');
+        }
+
+        // Show/hide warp button based on powerup state
+        if (isMobile && btnWarp) {
+            if (powerups.warpDash.active) {
+                btnWarp.classList.add('available');
+            } else {
+                btnWarp.classList.remove('available');
+            }
         }
 
         requestAnimationFrame(gameLoop);

@@ -439,10 +439,13 @@
         if (!audioCtx) {
             audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         }
+        if (audioCtx.state === 'suspended') {
+            audioCtx.resume();
+        }
     }
 
     function playSound(name) {
-        if (!audioCtx) return;
+        if (!audioCtx || audioCtx.state !== 'running') return;
         const t = audioCtx.currentTime;
         const osc = audioCtx.createOscillator();
         const gain = audioCtx.createGain();
@@ -534,7 +537,7 @@
     }
 
     function playDeathSound() {
-        if (!audioCtx) return;
+        if (!audioCtx || audioCtx.state !== 'running') return;
         const t = audioCtx.currentTime;
 
         const noise = audioCtx.createOscillator();

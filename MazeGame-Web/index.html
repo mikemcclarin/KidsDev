@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>STELLAR DRIFT</title>
     <style>
         body {
@@ -14,6 +15,9 @@
             min-height: 100vh;
             font-family: Arial, sans-serif;
             color: #fff;
+            overflow: hidden;
+            -webkit-user-select: none;
+            user-select: none;
         }
         h1 {
             color: #00ffff;
@@ -23,15 +27,139 @@
             display: block;
             margin-bottom: 20px;
             border: 3px solid #0a0a3e;
+            touch-action: none;
         }
         #hud {
             display: none;
+        }
+
+        /* Mobile: fit canvas to screen, hide title, overlay controls on canvas */
+        .mobile-active {
+            padding: 0 !important;
+            justify-content: flex-start !important;
+        }
+        .mobile-active h1 {
+            display: none;
+        }
+        .mobile-active canvas {
+            margin: 0;
+            border: none;
+        }
+
+        /* Mobile touch controls */
+        #touch-controls {
+            display: none;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 140px;
+            pointer-events: none;
+            z-index: 100;
+        }
+        #touch-controls.visible {
+            display: block;
+        }
+        .touch-btn {
+            position: absolute;
+            pointer-events: auto;
+            border: 2px solid rgba(0, 255, 255, 0.4);
+            border-radius: 16px;
+            background: rgba(0, 255, 255, 0.1);
+            color: rgba(0, 255, 255, 0.8);
+            font-size: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            touch-action: none;
+            -webkit-user-select: none;
+            user-select: none;
+            transition: background 0.1s;
+        }
+        .touch-btn.active {
+            background: rgba(0, 255, 255, 0.35);
+            border-color: rgba(0, 255, 255, 0.8);
+        }
+        #btn-left {
+            left: 10px;
+            bottom: 20px;
+            width: 70px;
+            height: 70px;
+        }
+        #btn-right {
+            left: 90px;
+            bottom: 20px;
+            width: 70px;
+            height: 70px;
+        }
+        #btn-jump {
+            right: 10px;
+            bottom: 20px;
+            width: 90px;
+            height: 70px;
+            font-size: 22px;
+        }
+        #btn-restart {
+            left: 50%;
+            transform: translateX(-50%);
+            bottom: 20px;
+            width: 120px;
+            height: 50px;
+            font-size: 18px;
+            display: none;
+        }
+        #btn-restart.show {
+            display: flex;
+        }
+
+        /* Landscape orientation hint */
+        #rotate-hint {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.92);
+            color: #00ffff;
+            font-size: 20px;
+            z-index: 200;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+        }
+        #rotate-hint .rotate-icon {
+            font-size: 48px;
+        }
+
+        @media (max-width: 900px) {
+            body { padding: 5px; }
+            h1 { font-size: 18px; margin: 4px 0; }
+        }
+
+        @media (orientation: portrait) and (max-width: 900px) {
+            .mobile-active #rotate-hint {
+                display: flex;
+            }
         }
     </style>
 </head>
 <body>
     <h1>STELLAR DRIFT</h1>
     <canvas id="canvas" width="800" height="600"></canvas>
+
+    <!-- Mobile touch controls -->
+    <div id="touch-controls">
+        <div class="touch-btn" id="btn-left">&larr;</div>
+        <div class="touch-btn" id="btn-right">&rarr;</div>
+        <div class="touch-btn" id="btn-jump">JUMP</div>
+        <div class="touch-btn" id="btn-restart">RESTART</div>
+    </div>
+
+    <!-- Rotate to landscape hint -->
+    <div id="rotate-hint">
+        <div class="rotate-icon">&#x1F4F1;&#x21BB;</div>
+        <div>Rotate your device to landscape</div>
+    </div>
+
     <div id="hud">
         <div id="lives">Lives: 10</div>
         <div id="level">Level: 1</div>
@@ -571,6 +699,126 @@
     window.addEventListener('keyup', (e) => {
         keys[e.key] = false;
     });
+
+    // ===================== MOBILE TOUCH CONTROLS =====================
+
+    const isMobile = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+
+    if (isMobile) {
+        document.body.classList.add('mobile-active');
+        document.getElementById('touch-controls').classList.add('visible');
+
+        // Fill the entire viewport — controls overlay on top of game
+        function resizeCanvasToFit() {
+            const vw = window.innerWidth;
+            const vh = window.innerHeight;
+            const gameRatio = 800 / 600;
+            let w, h;
+            if (vw / vh > gameRatio) {
+                h = vh;
+                w = h * gameRatio;
+            } else {
+                w = vw;
+                h = w / gameRatio;
+            }
+            canvas.style.width = Math.floor(w) + 'px';
+            canvas.style.height = Math.floor(h) + 'px';
+        }
+        resizeCanvasToFit();
+        window.addEventListener('resize', resizeCanvasToFit);
+    }
+
+    function setupTouchButton(id, keyName, options) {
+        const btn = document.getElementById(id);
+        if (!btn) return;
+
+        btn.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            btn.classList.add('active');
+            keys[keyName] = true;
+            initAudio();
+
+            // Fire one-shot actions (like keydown does for jump/dash)
+            if (options && options.onPress) options.onPress();
+        }, { passive: false });
+
+        btn.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            btn.classList.remove('active');
+            keys[keyName] = false;
+        }, { passive: false });
+
+        btn.addEventListener('touchcancel', (e) => {
+            e.preventDefault();
+            btn.classList.remove('active');
+            keys[keyName] = false;
+        }, { passive: false });
+    }
+
+    setupTouchButton('btn-left', 'ArrowLeft');
+    setupTouchButton('btn-right', 'ArrowRight');
+
+    setupTouchButton('btn-jump', ' ', {
+        onPress: function() {
+            if (readyCountdown > 0) return;
+            if (!player.jumping) {
+                player.velY = -12;
+                player.jumping = true;
+                playSound('jump');
+            } else if (powerups.doubleJump.active && powerups.doubleJump.airJumpsRemaining > 0) {
+                powerups.doubleJump.airJumpsRemaining--;
+                player.velY = -10;
+                playSound('airJump');
+                spawnAirJumpRings(player.x + player.width / 2, player.y + player.height);
+            }
+        }
+    });
+
+    // Restart button — special handling
+    const btnRestart = document.getElementById('btn-restart');
+    if (btnRestart) {
+        btnRestart.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            initAudio();
+            if (gameOver) {
+                lives = 10;
+                currentLevel = 1;
+                coins = 0;
+                gameOver = false;
+                levelComplete = false;
+                deathAnimating = false;
+                deathParticles = [];
+                particles = [];
+                readyCountdown = 0;
+                resetPowerups();
+                resetAllLevelPickups();
+                resetLevel();
+                btnRestart.classList.remove('show');
+            }
+        }, { passive: false });
+    }
+
+    // Prevent all default touch behavior on canvas (scroll, zoom, etc.)
+    canvas.addEventListener('touchstart', (e) => e.preventDefault(), { passive: false });
+    canvas.addEventListener('touchmove', (e) => e.preventDefault(), { passive: false });
+
+    // Check orientation on mobile
+    function checkOrientation() {
+        const hint = document.getElementById('rotate-hint');
+        if (!hint || !isMobile) return;
+        if (window.innerHeight > window.innerWidth && window.innerWidth < 900) {
+            hint.style.display = 'flex';
+        } else {
+            hint.style.display = 'none';
+        }
+    }
+    if (isMobile) {
+        checkOrientation();
+        window.addEventListener('resize', checkOrientation);
+        window.addEventListener('orientationchange', () => {
+            setTimeout(checkOrientation, 200);
+        });
+    }
 
     // ===================== LEVELS =====================
 
@@ -2625,6 +2873,9 @@
 
         if (gameOver) {
             drawGameOverScreen();
+            if (isMobile && btnRestart) btnRestart.classList.add('show');
+        } else {
+            if (isMobile && btnRestart) btnRestart.classList.remove('show');
         }
 
         requestAnimationFrame(gameLoop);

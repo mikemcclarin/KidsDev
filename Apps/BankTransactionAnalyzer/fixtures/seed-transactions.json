@@ -1,0 +1,22 @@
+[
+  { "date": "01/15/2025", "description": "POS DEBIT VISA AMAZON.COM AMZN.COM/BILL WA", "amount": "-45.99" },
+  { "date": "01/16/2025", "description": "CHECKCARD 0116 WALMART SUPERCENTER #3456 DALLAS TX", "amount": "-127.43" },
+  { "date": "01/17/2025", "description": "RECURRING ACH NETFLIX.COM 800-123-4567 CA", "amount": "-15.99" },
+  { "date": "01/18/2025", "description": "POS DEBIT STARBUCKS STORE 12345 PLANO TX", "amount": "-6.75" },
+  { "date": "01/19/2025", "description": "CHECKCARD SHELL OIL 57421123 DALLAS TX", "amount": "-42.10" },
+  { "date": "01/20/2025", "description": "ACH DEPOSIT EMPLOYER PAYROLL ACME CORP", "amount": "3200.00" },
+  { "date": "01/21/2025", "description": "ZELLE PAYMENT TO JOHN DOE", "amount": "-50.00" },
+  { "date": "01/22/2025", "description": "POS DEBIT WHOLE FOODS MKT #10234 FRISCO TX 75034", "amount": "-89.32" },
+  { "date": "01/23/2025", "description": "DEBIT CARD PURCHASE CHICK-FIL-A #02156 PLANO TX", "amount": "-12.45" },
+  { "date": "01/24/2025", "description": "AMAZON.COM REFUND AMZN.COM/BILL WA", "amount": "45.99" },
+  { "date": "01/25/2025", "description": "CHECKCARD TARGET T-1234 DALLAS TX", "amount": "-67.89" },
+  { "date": "01/26/2025", "description": "MONTHLY SERVICE FEE", "amount": "-12.00" },
+  { "date": "01/27/2025", "description": "ATM WITHDRAWAL 1234 MAIN ST DALLAS TX", "amount": "-60.00" },
+  { "date": "01/28/2025", "description": "CREDIT CARD REWARD CASHBACK", "amount": "25.50" },
+  { "date": "01/29/2025", "description": "RETURN DEBIT WALMART #3456 DALLAS TX", "amount": "32.18" },
+  { "date": "01/30/2025", "description": "UBER TRIP HELP.UBER.COM CA", "amount": "-18.50" },
+  { "date": "01/31/2025", "description": "SQ *BOBS PIZZA PLANO TX", "amount": "-14.25" },
+  { "date": "02/01/2025", "description": "VENMO PAYMENT FROM JANE SMITH", "amount": "75.00" },
+  { "date": "02/02/2025", "description": "DOORDASH DASHERPASS", "amount": "-9.99" },
+  { "date": "02/03/2025", "description": "PP*SPOTIFY USA", "amount": "-10.99" }
+]

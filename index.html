@@ -54,30 +54,62 @@
       padding: 56px 24px;
     }
 
+    /* ── Hero ── */
     .hero {
-      text-align: center;
-      margin-bottom: 64px;
+      display: flex;
+      align-items: center;
+      gap: 56px;
+      margin-bottom: 72px;
     }
 
-    .hero h1 {
-      font-size: 42px;
+    .hero-text { flex: 1; }
+
+    .hero-text h1 {
+      font-size: 46px;
       font-weight: 800;
-      letter-spacing: -1px;
+      letter-spacing: -1.5px;
+      line-height: 1.1;
       background: linear-gradient(135deg, var(--accent) 0%, var(--purple) 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
-      margin-bottom: 12px;
+      margin-bottom: 16px;
     }
 
-    .hero p {
+    .hero-text p {
       font-size: 18px;
       color: var(--muted);
-      max-width: 480px;
-      margin: 0 auto;
       line-height: 1.6;
+      max-width: 400px;
     }
 
+    .hero-image {
+      flex-shrink: 0;
+      width: 260px;
+      position: relative;
+    }
+
+    .hero-image img {
+      width: 100%;
+      border-radius: 16px;
+      display: block;
+      box-shadow:
+        0 0 0 1px rgba(88,166,255,0.15),
+        0 0 40px rgba(88,166,255,0.08),
+        0 24px 48px rgba(0,0,0,0.5);
+    }
+
+    /* subtle colored glow behind the image */
+    .hero-image::before {
+      content: '';
+      position: absolute;
+      inset: -12px;
+      border-radius: 24px;
+      background: radial-gradient(ellipse at center, rgba(188,140,255,0.12) 0%, transparent 70%);
+      z-index: -1;
+    }
+
+    /* ── Sections & cards ── */
     section { margin-bottom: 56px; }
 
     h2 {
@@ -142,8 +174,8 @@
       margin-top: 4px;
     }
 
-    .tag-game    { background: rgba(63,185,80,0.15);   color: var(--green); }
-    .tag-app     { background: rgba(88,166,255,0.15);  color: var(--accent); }
+    .tag-game { background: rgba(63,185,80,0.15);  color: var(--green); }
+    .tag-app  { background: rgba(88,166,255,0.15); color: var(--accent); }
 
     footer {
       text-align: center;
@@ -151,6 +183,15 @@
       border-top: 1px solid var(--border);
       font-size: 12px;
       color: var(--muted);
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 640px) {
+      header { padding: 16px 20px; }
+      .hero { flex-direction: column-reverse; gap: 32px; }
+      .hero-image { width: 200px; margin: 0 auto; }
+      .hero-text h1 { font-size: 34px; }
+      .hero-text p { font-size: 16px; }
     }
   </style>
 </head>
@@ -163,8 +204,13 @@
 
 <main>
   <div class="hero">
-    <h1>KidsDev Studio</h1>
-    <p>A collection of games and apps made by kids, for everyone.</p>
+    <div class="hero-text">
+      <h1>KidsDev Studio</h1>
+      <p>A collection of games and apps made by kids, for everyone.</p>
+    </div>
+    <div class="hero-image">
+      <img src="./assets/StylizedLogo.png" alt="KidsDev Studio">
+    </div>
   </div>
 
   <section>

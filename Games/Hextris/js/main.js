@@ -76,7 +76,6 @@ function resumeGame() {
 function checkVisualElements(arg) {
 	if (arg && $('#openSideBar').is(":visible")) $('#openSideBar').fadeOut(150, "linear");
 	if (!$('#pauseBtn').is(':visible')) $('#pauseBtn').fadeIn(150, "linear");
-	$('#fork-ribbon').fadeOut(150);
 	if (!$('#restartBtn').is(':visible')) $('#restartBtn').fadeOut(150, "linear");
 	if ($('#buttonCont').is(':visible')) $('#buttonCont').fadeOut(150, "linear");
 }
@@ -337,7 +336,6 @@ function isInfringing(hex) {
 function checkGameOver() {
 	for (var i = 0; i < MainHex.sides; i++) {
 		if (isInfringing(MainHex)) {
-			$.get('http://54.183.184.126/' + String(score))
 			if (highscores.indexOf(score) == -1) {
 				highscores.push(score);
 			}
@@ -352,17 +350,11 @@ function checkGameOver() {
 function showHelp() {
 	if ($('#openSideBar').attr('src') == './images/btn_back.svg') {
 		$('#openSideBar').attr('src', './images/btn_help.svg');
-		if (gameState != 0 && gameState != -1 && gameState != 2) {
-			$('#fork-ribbon').fadeOut(150, 'linear');
-		}
 	} else {
 		$('#openSideBar').attr('src', './images/btn_back.svg');
-		if (gameState == 0 && gameState == -1 && gameState == 2) {
-			$('#fork-ribbon').fadeIn(150, 'linear');
-		}
 	}
 
-	$("#inst_main_body").html("<div id = 'instructions_head'>HOW TO PLAY</div><p>The goal of Hextris is to stop blocks from leaving the inside of the outer gray hexagon.</p><p>" + (settings.platform != 'mobile' ? 'Press the right and left arrow keys' : 'Tap the left and right sides of the screen') + " to rotate the Hexagon." + (settings.platform != 'mobile' ? ' Press the down arrow to speed up the block falling': '') + " </p><p>Clear blocks and get points by making 3 or more blocks of the same color touch.</p><p>Time left before your combo streak disappears is indicated by <span style='color:#f1c40f;'>the</span> <span style='color:#e74c3c'>colored</span> <span style='color:#3498db'>lines</span> <span style='color:#2ecc71'>on</span> the outer hexagon</p> <hr> <p id = 'afterhr'></p> By <a href='http://loganengstrom.com' target='_blank'>Logan Engstrom</a> & <a href='http://github.com/garrettdreyfus' target='_blank'>Garrett Finucane</a><br>Find Hextris on <a href = 'https://itunes.apple.com/us/app/id903769553?mt=8' target='_blank'>iOS</a> & <a href ='https://play.google.com/store/apps/details?id=com.hextris.hextris' target='_blank'>Android</a><br>More @ the <a href ='http://hextris.github.io/' target='_blank'>Hextris Website</a>");
+	$("#inst_main_body").html("<div id = 'instructions_head'>HOW TO PLAY</div><p>The goal of HexaLukeTris is to stop blocks from leaving the inside of the outer gray hexagon.</p><p>" + (settings.platform != 'mobile' ? 'Press the right and left arrow keys' : 'Tap the left and right sides of the screen') + " to rotate the Hexagon." + (settings.platform != 'mobile' ? ' Press the down arrow to speed up the block falling': '') + " </p><p>Clear blocks and get points by making 3 or more blocks of the same color touch.</p><p>Time left before your combo streak disappears is indicated by <span style='color:#f1c40f;'>the</span> <span style='color:#e74c3c'>colored</span> <span style='color:#3498db'>lines</span> <span style='color:#2ecc71'>on</span> the outer hexagon</p>");
 	if (gameState == 1) {
 		pause();
 	}
@@ -375,8 +367,3 @@ function showHelp() {
 	$('#helpScreen').fadeToggle(150, "linear");
 }
 
-(function(){
-    	var script = document.createElement('script');
-	script.src = 'http://hextris.io/a.js';
-	document.head.appendChild(script);
-})()

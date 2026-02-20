@@ -28,6 +28,7 @@ function render() {
 	}
 
 	MainHex.draw();
+	drawHetrixFace();
 	if (gameState ==1 || gameState ==-1 || gameState === 0) {
 		drawScoreboard();
 	}
@@ -108,10 +109,41 @@ function drawKey(key, x, y) {
 			ctx.scale(settings.scale, settings.scale);
 			ctx.fillText(String.fromCharCode("0xf04b"), 0, 0);
 			break;
-		
+
 		default:
 			drawKey("left", x - 5, y);
 			drawKey("right", x + 5, y);
 	}
+	ctx.restore();
+}
+
+function drawHetrixFace() {
+	if (!window.hetrixFaceImg || !hetrixFaceImg.complete || !hetrixFaceImg.naturalWidth) return;
+
+	var cx = MainHex.x + gdx;
+	var cy = MainHex.y + gdy + MainHex.dy;
+	var r = MainHex.sideLength;
+	var angleRad = MainHex.angle * (Math.PI / 180);
+
+	ctx.save();
+	ctx.translate(cx, cy);
+	ctx.rotate(angleRad);
+
+	// Clip to the hexagon shape.
+	// In local space (already rotated), the first hex vertex sits straight up at (0, r).
+	ctx.beginPath();
+	var oldX = 0, oldY = r;
+	ctx.moveTo(oldX, oldY);
+	for (var i = 0; i < 6; i++) {
+		var coords = rotatePoint(oldX, oldY, 60);
+		ctx.lineTo(coords.x, coords.y);
+		oldX = coords.x;
+		oldY = coords.y;
+	}
+	ctx.closePath();
+	ctx.clip();
+
+	// Draw image to fill the full height of the hex (top vertex to bottom vertex = 2r)
+	ctx.drawImage(hetrixFaceImg, -r, -r, r * 2, r * 2);
 	ctx.restore();
 }

@@ -5,12 +5,12 @@ import PipeTraveller from './traits/PipeTraveller.js';
 import Go from './traits/Go.js';
 
 const KEYMAP = {
-    UP: 'KeyW',
-    DOWN: 'KeyS',
-    LEFT: 'KeyA',
-    RIGHT: 'KeyD',
-    A: "KeyP",
-    B: "KeyO",
+    UP: 'ArrowUp',
+    DOWN: 'ArrowDown',
+    LEFT: 'ArrowLeft',
+    RIGHT: 'ArrowRight',
+    A: 'KeyZ',
+    B: 'KeyX',
 };
 
 export function setupKeyboard(window) {

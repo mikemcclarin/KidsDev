@@ -13,7 +13,7 @@ function handleX({entity, match}) {
     }
 }
 
-function handleY({entity, match, resolver}) {
+function handleY({entity, match, resolver, gameContext, level}) {
     if (entity.vel.y > 0) {
         if (entity.bounds.bottom > match.y1) {
             entity.obstruct(Sides.BOTTOM, match);
@@ -22,8 +22,16 @@ function handleY({entity, match, resolver}) {
         if (entity.traits.has(Player)) {
             const player = entity.traits.get(Player);
             player.addCoins(1);
-            match.tile.style = 'metal';
-            match.tile.behavior = 'ground';
+
+            // Replace only this cell — don't mutate the shared tile reference
+            const grid = resolver.matrix;
+            grid.set(match.indexX, match.indexY, { style: 'metal', behavior: 'ground' });
+
+            // Spawn coin pop animation above the block
+            const coin = gameContext.entityFactory.coinPop();
+            coin.pos.set(match.x1, match.y1 - 16);
+            coin.vel.set(0, -300);
+            level.entities.add(coin);
         }
 
         if (entity.bounds.top < match.y2) {

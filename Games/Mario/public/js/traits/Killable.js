@@ -1,6 +1,8 @@
 import Trait from '../Trait.js';
 
 export default class Killable extends Trait {
+    static EVENT_KILL = Symbol('kill');
+
     constructor() {
         super();
         this.dead = false;
@@ -9,7 +11,10 @@ export default class Killable extends Trait {
     }
 
     kill() {
-        this.queue(() => this.dead = true);
+        this.queue(() => {
+            this.dead = true;
+            this.deadTime = 0;
+        });
     }
 
     revive() {
@@ -19,6 +24,9 @@ export default class Killable extends Trait {
 
     update(entity, {deltaTime}, level) {
         if (this.dead) {
+            if (this.deadTime === 0) {
+                entity.events.emit(Killable.EVENT_KILL, entity, level);
+            }
             this.deadTime += deltaTime;
             if (this.deadTime > this.removeAfter) {
                 this.queue(() => {

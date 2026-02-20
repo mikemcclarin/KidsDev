@@ -28,6 +28,9 @@ function createMarioFactory(sprite, audio) {
     const climbAnim = sprite.animations.get('climb');
 
     function getHeading(mario) {
+        if (mario.traits.get(Killable).dead) {
+            return false;
+        }
         const poleTraveller = mario.traits.get(PoleTraveller);
         if (poleTraveller.distance) {
             return false;
@@ -36,6 +39,10 @@ function createMarioFactory(sprite, audio) {
     }
 
     function routeFrame(mario) {
+        if (mario.traits.get(Killable).dead) {
+            return 'die';
+        }
+
         const pipeTraveller = mario.traits.get(PipeTraveller);
         if (pipeTraveller.movement.x != 0) {
             return runAnim(pipeTraveller.distance.x * 2);
@@ -89,6 +96,12 @@ function createMarioFactory(sprite, audio) {
 
         mario.traits.get(Killable).removeAfter = Infinity;
         mario.traits.get(Jump).velocity = 175;
+
+        // On death: bounce up and disable tile collision
+        mario.traits.get(Killable).listen(Killable.EVENT_KILL, (entity) => {
+            entity.vel.y = -600;
+            entity.traits.get(Solid).obstructs = false;
+        });
 
         mario.turbo = setTurboState;
         mario.draw = drawMario;

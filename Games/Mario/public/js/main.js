@@ -1,6 +1,9 @@
 import Level from './Level.js';
 import Timer from './Timer.js';
 import Pipe from './traits/Pipe.js';
+import Killable from './traits/Killable.js';
+import PoleTraveller from './traits/PoleTraveller.js';
+import Solid from './traits/Solid.js';
 import {createLevelLoader} from './loaders/level.js';
 import {loadFont} from './loaders/font.js';
 import {loadEntities} from './entities.js';
@@ -37,6 +40,24 @@ async function main(canvas) {
 
     const inputRouter = setupKeyboard(window);
     inputRouter.addReceiver(mario);
+
+    // On death: bounce up, fall offscreen, then restart the level after 3 seconds
+    mario.traits.get(Killable).listen(Killable.EVENT_KILL, (entity, level) => {
+        setTimeout(() => {
+            entity.traits.get(Killable).revive();
+            entity.traits.get(Solid).obstructs = true;
+            entity.vel.set(0, 0);
+            startWorld(level.name || '1-1');
+        }, 3000);
+    });
+
+    // On pole ride complete: brief pause then move to next level
+    mario.traits.get(PoleTraveller).listen(PoleTraveller.EVENT_RIDE_COMPLETE, (entity, level) => {
+        entity.vel.x = 80;  // walk right off the pole
+        setTimeout(() => {
+            startWorld(level.name || '1-1');
+        }, 2000);
+    });
 
     function createLoadingScreen(name) {
         const scene = new Scene();

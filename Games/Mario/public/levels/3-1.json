@@ -143,7 +143,7 @@
                 },
                 {
                     "style": "chance",
-                    "behavior": "ground",
+                    "behavior": "chance",
                     "ranges": [
                         [16, 9],
                         [19, 8],

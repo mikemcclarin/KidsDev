@@ -68,7 +68,7 @@
                 },
                 {
                     "style": "chance",
-                    "behavior": "ground",
+                    "behavior": "chance",
                     "ranges": [
                         [10, 5, 9]
                     ]

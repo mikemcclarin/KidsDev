@@ -71,7 +71,7 @@
                 },
                 {
                     "style": "chance",
-                    "behavior": "ground",
+                    "behavior": "chance",
                     "ranges": [
                         [31, 6]
                     ]

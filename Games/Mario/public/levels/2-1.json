@@ -49,7 +49,7 @@
                 },
                 {
                     "style": "chance",
-                    "behavior": "ground",
+                    "behavior": "chance",
                     "ranges": [
                         [53, 5, 5],
                         [53, 5, 9],

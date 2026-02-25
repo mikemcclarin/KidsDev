@@ -28,8 +28,10 @@ class Behavior extends Trait {
 }
 
 function createMushroomFactory(sprite) {
+    const walkAnim = sprite.animations.get('walk');
+
     function drawMushroom(context) {
-        sprite.draw('mushroom', context, 0, 0);
+        sprite.draw(walkAnim(this.lifetime), context, 0, 0);
     }
 
     return function createMushroom() {

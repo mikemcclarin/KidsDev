@@ -7,11 +7,25 @@ import PipeTraveller from '../traits/PipeTraveller.js';
 import PoleTraveller from '../traits/PoleTraveller.js';
 import Solid from '../traits/Solid.js';
 import Stomper from '../traits/Stomper.js';
+import Trait from '../Trait.js';
 import {loadAudioBoard} from '../loaders/audio.js';
 import {loadSpriteSheet} from '../loaders/sprite.js';
 
 const SLOW_DRAG = 1/1000;
 const FAST_DRAG = 1/5000;
+
+class HurtProtect extends Trait {
+    constructor() {
+        super();
+        this.timer = 0;
+    }
+
+    update(entity, {deltaTime}) {
+        if (this.timer > 0) {
+            this.timer -= deltaTime;
+        }
+    }
+}
 
 export function loadMario(audioContext) {
     return Promise.all([
@@ -83,7 +97,22 @@ function createMarioFactory(sprite, audio) {
         if (this.powerState === 'small') {
             this.powerState = 'large';
             this.size.set(14, 28);
-            this.pos.y -= 16;
+            this.pos.y -= 12;
+        }
+    }
+
+    function hurt() {
+        const protect = this.traits.get(HurtProtect);
+        if (protect.timer > 0) {
+            return;
+        }
+        if (this.powerState === 'large') {
+            this.powerState = 'small';
+            this.size.set(14, 16);
+            this.pos.y += 12;
+            protect.timer = 2.0;
+        } else {
+            this.traits.get(Killable).kill();
         }
     }
 
@@ -105,18 +134,22 @@ function createMarioFactory(sprite, audio) {
         mario.addTrait(new Stomper());
         mario.addTrait(new PipeTraveller());
         mario.addTrait(new PoleTraveller());
+        mario.addTrait(new HurtProtect());
 
         mario.traits.get(Killable).removeAfter = Infinity;
         mario.traits.get(Jump).velocity = 175;
 
-        // On death: bounce up and disable tile collision
+        // On death: bounce up, disable tile collision, reset power state
         mario.traits.get(Killable).listen(Killable.EVENT_KILL, (entity) => {
             entity.vel.y = -600;
             entity.traits.get(Solid).obstructs = false;
+            entity.powerState = 'small';
+            entity.size.set(14, 16);
         });
 
         mario.turbo = setTurboState;
         mario.powerUp = powerUp;
+        mario.hurt = hurt;
         mario.draw = drawMario;
 
         mario.turbo(false);

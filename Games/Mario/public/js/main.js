@@ -2,6 +2,7 @@ import Level from './Level.js';
 import Timer from './Timer.js';
 import Pipe from './traits/Pipe.js';
 import Killable from './traits/Killable.js';
+import Player from './traits/Player.js';
 import PoleTraveller from './traits/PoleTraveller.js';
 import Solid from './traits/Solid.js';
 import {createLevelLoader} from './loaders/level.js';
@@ -41,8 +42,9 @@ async function main(canvas) {
     const inputRouter = setupKeyboard(window);
     inputRouter.addReceiver(mario);
 
-    // On death: bounce up, fall offscreen, then restart the level after 3 seconds
+    // On death: deduct a life, then restart the level after 3 seconds
     mario.traits.get(Killable).listen(Killable.EVENT_KILL, (entity, level) => {
+        entity.traits.get(Player).addLives(-1);
         setTimeout(() => {
             entity.traits.get(Killable).revive();
             entity.traits.get(Solid).obstructs = true;

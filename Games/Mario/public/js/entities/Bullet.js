@@ -29,7 +29,7 @@ class Behavior extends Trait {
                 us.traits.get(Killable).kill();
                 us.vel.set(100, -200);
             } else {
-                them.traits.get(Killable).kill();
+                them.hurt ? them.hurt() : them.traits.get(Killable).kill();
             }
         }
     }

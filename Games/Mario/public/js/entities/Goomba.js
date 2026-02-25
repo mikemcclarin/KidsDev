@@ -29,7 +29,7 @@ class Behavior extends Trait {
                 us.traits.get(Killable).kill();
                 us.traits.get(PendulumMove).speed = 0;
             } else {
-                them.traits.get(Killable).kill();
+                them.hurt ? them.hurt() : them.traits.get(Killable).kill();
             }
         }
     }

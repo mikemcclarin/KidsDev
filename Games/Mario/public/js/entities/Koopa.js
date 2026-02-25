@@ -51,14 +51,14 @@ class Behavior extends Trait {
 
     handleNudge(us, them) {
         if (this.state === STATE_WALKING) {
-            them.traits.get(Killable).kill();
+            them.hurt ? them.hurt() : them.traits.get(Killable).kill();
         } else if (this.state === STATE_HIDING) {
             this.panic(us, them);
         } else if (this.state === STATE_PANIC) {
             const travelDir = Math.sign(us.vel.x);
             const impactDir = Math.sign(us.pos.x - them.pos.x);
             if (travelDir !== 0 && travelDir !== impactDir) {
-                them.traits.get(Killable).kill();
+                them.hurt ? them.hurt() : them.traits.get(Killable).kill();
             }
         }
     }

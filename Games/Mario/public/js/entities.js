@@ -75,7 +75,7 @@ export async function loadEntities(audioContext) {
             .then(addAs('brickShrapnel')),
         loadCoinPop()
             .then(addAs('coinPop')),
-        loadMushroom()
+        setup(loadMushroom)
             .then(addAs('mushroom')),
     ]);
 

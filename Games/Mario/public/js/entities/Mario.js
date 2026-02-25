@@ -18,11 +18,15 @@ class HurtProtect extends Trait {
     constructor() {
         super();
         this.timer = 0;
+        this.growTimer = 0;
     }
 
     update(entity, {deltaTime}) {
         if (this.timer > 0) {
             this.timer -= deltaTime;
+        }
+        if (this.growTimer > 0) {
+            this.growTimer -= deltaTime;
         }
     }
 }
@@ -56,6 +60,12 @@ function createMarioFactory(sprite, audio) {
     function routeFrame(mario) {
         if (mario.traits.get(Killable).dead) {
             return 'die';
+        }
+
+        const protect = mario.traits.get(HurtProtect);
+        if (protect.growTimer > 0) {
+            // Alternate between small and large idle frames to show growing
+            return Math.floor(protect.growTimer * 12) % 2 === 0 ? 'idle-large' : 'idle';
         }
 
         const isLarge = mario.powerState === 'large';
@@ -98,6 +108,8 @@ function createMarioFactory(sprite, audio) {
             this.powerState = 'large';
             this.size.set(14, 28);
             this.pos.y -= 12;
+            this.traits.get(HurtProtect).growTimer = 0.5;
+            this.sounds.add('power-up-consume');
         }
     }
 
@@ -117,6 +129,11 @@ function createMarioFactory(sprite, audio) {
     }
 
     function drawMario(context) {
+        // Flash during hurt invincibility
+        const protect = this.traits.get(HurtProtect);
+        if (protect.timer > 0 && Math.floor(this.lifetime * 15) % 2 === 0) {
+            return;
+        }
         sprite.draw(routeFrame(this), context, 0, 0, getHeading(this));
     }
 

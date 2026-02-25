@@ -5,14 +5,30 @@ import PendulumMove from '../traits/PendulumMove.js';
 import Physics from '../traits/Physics.js';
 import Player from '../traits/Player.js';
 import Solid from '../traits/Solid.js';
+import {loadAudioBoard} from '../loaders/audio.js';
 import {loadSpriteSheet} from '../loaders/sprite.js';
 
-export function loadMushroom() {
-    return loadSpriteSheet('mushroom')
-        .then(createMushroomFactory);
+export function loadMushroom(audioContext) {
+    return Promise.all([
+        loadSpriteSheet('mushroom'),
+        loadAudioBoard('mushroom', audioContext),
+    ])
+    .then(([sprite, audio]) => createMushroomFactory(sprite, audio));
 }
 
 class Behavior extends Trait {
+    constructor() {
+        super();
+        this._spawnSoundPlayed = false;
+    }
+
+    update(entity) {
+        if (!this._spawnSoundPlayed) {
+            entity.sounds.add('power-up-appears');
+            this._spawnSoundPlayed = true;
+        }
+    }
+
     collides(us, them) {
         if (us.traits.get(Killable).dead) {
             return;
@@ -27,15 +43,14 @@ class Behavior extends Trait {
     }
 }
 
-function createMushroomFactory(sprite) {
-    const walkAnim = sprite.animations.get('walk');
-
+function createMushroomFactory(sprite, audio) {
     function drawMushroom(context) {
-        sprite.draw(walkAnim(this.lifetime), context, 0, 0);
+        sprite.draw('mushroom', context, 0, 0);
     }
 
     return function createMushroom() {
         const mushroom = new Entity();
+        mushroom.audio = audio;
         mushroom.size.set(16, 16);
 
         mushroom.addTrait(new Physics());

@@ -8,6 +8,9 @@
         },
         "stomp": {
             "url": "audio/fx/stomp.ogg"
+        },
+        "power-up-consume": {
+            "url": "audio/fx/power-up-consume.ogg"
         }
     }
 }

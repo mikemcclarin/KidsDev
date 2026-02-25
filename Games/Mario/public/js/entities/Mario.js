@@ -25,6 +25,7 @@ export function loadMario(audioContext) {
 
 function createMarioFactory(sprite, audio) {
     const runAnim = sprite.animations.get('run');
+    const runLargeAnim = sprite.animations.get('run-large');
     const climbAnim = sprite.animations.get('climb');
 
     function getHeading(mario) {
@@ -43,12 +44,14 @@ function createMarioFactory(sprite, audio) {
             return 'die';
         }
 
+        const isLarge = mario.powerState === 'large';
+
         const pipeTraveller = mario.traits.get(PipeTraveller);
         if (pipeTraveller.movement.x != 0) {
-            return runAnim(pipeTraveller.distance.x * 2);
+            return isLarge ? runLargeAnim(pipeTraveller.distance.x * 2) : runAnim(pipeTraveller.distance.x * 2);
         }
         if (pipeTraveller.movement.y != 0) {
-            return 'idle';
+            return isLarge ? 'idle-large' : 'idle';
         }
 
         const poleTraveller = mario.traits.get(PoleTraveller);
@@ -57,23 +60,31 @@ function createMarioFactory(sprite, audio) {
         }
 
         if (mario.traits.get(Jump).falling) {
-            return 'jump';
+            return isLarge ? 'jump-large' : 'jump';
         }
 
         const go = mario.traits.get(Go);
         if (go.distance > 0) {
             if ((mario.vel.x > 0 && go.dir < 0) || (mario.vel.x < 0 && go.dir > 0)) {
-                return 'break';
+                return isLarge ? 'break-large' : 'break';
             }
 
-            return runAnim(mario.traits.get(Go).distance);
+            return isLarge ? runLargeAnim(mario.traits.get(Go).distance) : runAnim(mario.traits.get(Go).distance);
         }
 
-        return 'idle';
+        return isLarge ? 'idle-large' : 'idle';
     }
 
     function setTurboState(turboOn) {
         this.traits.get(Go).dragFactor = turboOn ? FAST_DRAG : SLOW_DRAG;
+    }
+
+    function powerUp() {
+        if (this.powerState === 'small') {
+            this.powerState = 'large';
+            this.size.set(14, 28);
+            this.pos.y -= 16;
+        }
     }
 
     function drawMario(context) {
@@ -84,6 +95,7 @@ function createMarioFactory(sprite, audio) {
         const mario = new Entity();
         mario.audio = audio;
         mario.size.set(14, 16);
+        mario.powerState = 'small';
 
         mario.addTrait(new Physics());
         mario.addTrait(new Solid());
@@ -104,6 +116,7 @@ function createMarioFactory(sprite, audio) {
         });
 
         mario.turbo = setTurboState;
+        mario.powerUp = powerUp;
         mario.draw = drawMario;
 
         mario.turbo(false);

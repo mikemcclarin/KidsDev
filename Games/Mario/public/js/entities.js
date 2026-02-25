@@ -7,6 +7,7 @@ import {loadBullet} from './entities/Bullet.js';
 import {loadCannon} from './entities/Cannon.js';
 import {loadBrickShrapnel} from './entities/BrickShrapnel.js';
 import {loadCoinPop} from './entities/CoinPop.js';
+import {loadMushroom} from './entities/Mushroom.js';
 import {loadPipePortal} from './entities/PipePortal.js';
 import {loadFlagPole} from './entities/FlagPole.js';
 
@@ -74,6 +75,8 @@ export async function loadEntities(audioContext) {
             .then(addAs('brickShrapnel')),
         loadCoinPop()
             .then(addAs('coinPop')),
+        loadMushroom()
+            .then(addAs('mushroom')),
     ]);
 
     return entityFactories;

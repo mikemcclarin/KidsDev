@@ -140,9 +140,16 @@
                 {
                     "style": "chance",
                     "behavior": "chance",
+                    "contains": "mushroom",
+                    "ranges": [
+                        [22, 5]
+                    ]
+                },
+                {
+                    "style": "chance",
+                    "behavior": "chance",
                     "ranges": [
                         [16, 9],
-                        [22, 5],
                         [21, 9],
                         [23, 9],
                         [78, 9],

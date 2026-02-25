@@ -23,18 +23,27 @@ function handleY({entity, match, resolver, gameContext, level}) {
             // Use live cell check — match.tile is stale if block was already used
             const liveTile = resolver.matrix.get(match.indexX, match.indexY);
             if (liveTile && liveTile.behavior === 'chance') {
-                const player = entity.traits.get(Player);
-                player.addCoins(1);
-
                 // Replace only this cell — don't mutate the shared tile reference
                 resolver.matrix.set(match.indexX, match.indexY, { style: 'metal', behavior: 'ground' });
 
-                // Spawn coin pop animation above the block
-                if (gameContext.entityFactory.coinPop) {
-                    const coin = gameContext.entityFactory.coinPop();
-                    coin.pos.set(match.x1, match.y1 - 16);
-                    coin.vel.set(0, -300);
-                    level.entities.add(coin);
+                if (liveTile.contains === 'mushroom') {
+                    // Spawn mushroom that slides out from the block
+                    if (gameContext.entityFactory.mushroom) {
+                        const mushroom = gameContext.entityFactory.mushroom();
+                        mushroom.pos.set(match.x1, match.y1 - 16);
+                        level.entities.add(mushroom);
+                    }
+                } else {
+                    // Default: give player a coin and spawn coin pop animation
+                    const player = entity.traits.get(Player);
+                    player.addCoins(1);
+
+                    if (gameContext.entityFactory.coinPop) {
+                        const coin = gameContext.entityFactory.coinPop();
+                        coin.pos.set(match.x1, match.y1 - 16);
+                        coin.vel.set(0, -300);
+                        level.entities.add(coin);
+                    }
                 }
             }
         }

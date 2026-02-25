@@ -294,6 +294,10 @@
         {
             "name": "goomba-brown",
             "pos": [2808, 192]
+        },
+        {
+            "name": "flag-pole",
+            "pos": [3168, 48]
         }
     ],
     "triggers": []
